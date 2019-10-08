@@ -1,29 +1,33 @@
 import * as E from 'fp-ts/lib/Either';
 import { Monad1 } from 'fp-ts/lib/Monad';
 import * as NEA from 'fp-ts/lib/NonEmptyArray';
-import { pipeable } from 'fp-ts/lib/pipeable';
+import { pipeable, pipe } from 'fp-ts/lib/pipeable';
 import * as R from 'fp-ts/lib/Reader';
 import * as S from 'fp-ts/lib/State';
 import * as ts from 'typescript';
 
 import State = S.State;
-
 import Reader = R.Reader;
 
-type DerivateState = { }
-type DerivateError = Exception // todo: add more errors
+export type DerivateState = { }
+export type DerivateError = Exception | UnsupportedType // todo: add more errors
 
-type Exception = { _type: 'exception', message: string }
-type Context = {
+export type Exception = { _type: 'exception', message: string }
+export const exception = (message: string): DerivateError => ({ _type: 'exception', message })
+export type UnsupportedType = { _type: 'unsupported_type', type: ts.Type, label: string }
+export const unsupportedType = (type: ts.Type, label: string): UnsupportedType => ({ _type: 'unsupported_type', type, label})
+
+export type Context = {
   checker: ts.TypeChecker,
   program: ts.Program,
-  source: ts.SourceFile
+  source: ts.SourceFile,
+  deriveNode: ts.Node
 }
 
-type CanError<A> = E.Either<NEA.NonEmptyArray<DerivateError>, A>
-type Derivate<A> = Reader<Context, State<DerivateState, CanError<A>>>
+export type CanError<A> = E.Either<NEA.NonEmptyArray<DerivateError>, A>
+export type Derivate<A> = Reader<Context, State<DerivateState, CanError<A>>>
 
-const URI = 'DerivativeTransformer'
+export const URI = 'DerivativeTransformer'
 declare module 'fp-ts/lib/HKT' {
   interface URItoKind<A> {
     DerivativeTransformer: Derivate<A>;
@@ -45,7 +49,7 @@ const apD = <A, B>(rseab: Derivate<(a: A) => B>, rsea: Derivate<A>): Derivate<B>
     }
   }
 
-const of = <A>(a: A): Derivate<A> => R.of(S.of(E.right(a)))
+export const of = <A>(a: A): Derivate<A> => R.of(S.of(E.right(a)))
 
 const mapD = <A, B>(rsea: Derivate<A>, f: (a: A) => B): Derivate<B> =>
   context => {
@@ -73,9 +77,7 @@ const chainD = <A, B>(rsea: Derivate<A>, f: (a: A) => Derivate<B>): Derivate<B> 
     }
   }
 
-export const error = (err: DerivateError): Derivate<never> => R.of(S.of(E.left([err])))
-
-export const derivativeTransformer: Monad1<'DerivativeTransformer'> = {
+export const derivate: Monad1<'DerivativeTransformer'> = {
   URI,
   ap: apD,
   of,
@@ -83,4 +85,12 @@ export const derivativeTransformer: Monad1<'DerivativeTransformer'> = {
   chain: chainD
 }
 
-export const { ap, apFirst, apSecond, chain, chainFirst, flatten, map } = pipeable(derivativeTransformer)
+export const { ap, apFirst, apSecond, chain, chainFirst, flatten, map } = pipeable(derivate)
+
+export const error = (err: DerivateError): Derivate<never> => R.of(S.of(E.left([err])))
+
+export const ask = <A>(f: (c: Context) => A): Derivate<A> => 
+  pipe(
+    R.ask<Context>(),
+    R.map(c => S.of(E.right(f(c))))
+  )
