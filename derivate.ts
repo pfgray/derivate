@@ -8,6 +8,7 @@ import * as ts from 'typescript';
 
 import State = S.State;
 import Reader = R.Reader;
+import { Option, isNone } from 'fp-ts/lib/Option';
 
 export type DerivateState = { }
 export type DerivateError = Exception | UnsupportedType // todo: add more errors
@@ -94,3 +95,7 @@ export const ask = <A>(f: (c: Context) => A): Derivate<A> =>
     R.ask<Context>(),
     R.map(c => S.of(E.right(f(c))))
   )
+
+// type OptionHandler = <A>(o: Option<A>) => Derivate<A>
+export const fromOption = (ifNone: DerivateError): (<A>(o: Option<A>) => Derivate<A>) =>
+  op => isNone(op) ? error(ifNone) : of(op.value)

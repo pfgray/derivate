@@ -1,7 +1,7 @@
 import * as D from './derivate';
-import { Derivate, unsupportedType, derivate, Exception } from './derivate';
+import { Derivate, unsupportedType, derivate, Exception, fromOption } from './derivate';
 import * as ts from 'typescript';
-import { Option, some, none, fold, map, option } from 'fp-ts/lib/Option';
+import { Option, some, none, fold, map, option, fromNullable } from 'fp-ts/lib/Option';
 import { findFirst, zipWith, zip, range, chain } from 'fp-ts/lib/Array';
 import { Do } from 'fp-ts-contrib/lib/Do';
 import { pipe } from 'fp-ts/lib/pipeable'
@@ -69,7 +69,9 @@ const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
 
 const toProp = (propSig: ts.PropertySignature): Derivate<Prop> =>
   pipe(
-    typeNodeToType(left(propSig.type)),
+    fromNullable(propSig.type),
+    fromOption(D.exception(`Property signature: ${propSig.getFullText()} has no type`)),
+    D.chain(typ => typeNodeToType(left(typ))),
     D.map(type => ({
       name: propSig.name.getText(),
       type
@@ -132,10 +134,13 @@ function extractDeriveCall(checker: ts.TypeChecker): (node: ts.Node) => Option<D
         call.getChildren(),
         findFirst(c => ts.isIdentifier(c) && c.getFullText().trim() === '__derive'),
       )
-    ).return(({call}) => {
+    )
+    .bindL('typeArgs', ({call}) => fromNullable(call.typeArguments))
+    .bindL('typeArg', ({typeArgs}) => fromNullable(typeArgs[0]))
+    .return(({call, typeArg}) => {
       console.log('got call... ')
       console.log('-------------------')
-      return ({type: call.typeArguments[0], fullText: call.getFullText()})
+      return ({type: typeArg, fullText: call.getFullText()})
     })
 }
 
