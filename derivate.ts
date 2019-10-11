@@ -1,3 +1,4 @@
+import { Do } from 'fp-ts-contrib/lib/Do';
 import * as E from 'fp-ts/lib/Either';
 import { Monad1 } from 'fp-ts/lib/Monad';
 import * as NEA from 'fp-ts/lib/NonEmptyArray';
@@ -9,20 +10,36 @@ import * as ts from 'typescript';
 import State = S.State;
 import Reader = R.Reader;
 import { Option, isNone } from 'fp-ts/lib/Option';
+import { ADT, match } from './adt';
+import { red } from './console';
+import { identity } from 'fp-ts/lib/function';
+import { IoType } from './ioTsTypes';
 
-export type DerivateState = { }
-export type DerivateError = Exception | UnsupportedType // todo: add more errors
+export type DerivateState = {
+  resolvedTypes: [ts.Type, ts.Expression][]
+}
 
-export type Exception = { _type: 'exception', message: string }
-export const exception = (message: string): DerivateError => ({ _type: 'exception', message })
-export type UnsupportedType = { _type: 'unsupported_type', type: ts.Type, label: string }
-export const unsupportedType = (type: ts.Type, label: string): UnsupportedType => ({ _type: 'unsupported_type', type, label})
+export type DerivateError = ADT<{
+  Exception: {message: string},
+  UnsupportedType: { type: ts.Type, label: string },
+  InvalidProp: { name: string, pos: {line: number, char: number} }
+}>
+
+export const printError = (e: DerivateError): string => 
+  match(e)({
+    Exception: e => `Whoops, ${e.message}`,
+    UnsupportedType: e => `The type ${red(e.label)} isn't supported for derivation.`,
+    InvalidProp: e => `The property ${red(e.name)} found didn't work out.`
+  })
+
+export const exception = (message: string): DerivateError => ({ _type: 'Exception', message })
+export const unsupportedType = (type: ts.Type, label: string): DerivateError => ({ _type: 'UnsupportedType', type, label})
 
 export type Context = {
   checker: ts.TypeChecker,
   program: ts.Program,
   source: ts.SourceFile,
-  deriveNode: ts.Node
+  deriveNode: ts.Node,
 }
 
 export type CanError<A> = E.Either<NEA.NonEmptyArray<DerivateError>, A>
@@ -90,6 +107,23 @@ export const { ap, apFirst, apSecond, chain, chainFirst, flatten, map } = pipeab
 
 export const error = (err: DerivateError): Derivate<never> => R.of(S.of(E.left([err])))
 
+export const get: Derivate<DerivateState> =
+  R.of(state => [E.right(state), state])
+
+export const put = (s: DerivateState): Derivate<DerivateState> =>
+  R.of(() => [E.right(s), s])
+
+export const modify = (f: (s: DerivateState) => DerivateState): Derivate<DerivateState> =>
+  R.of(state => pipe(f(state), newState => [E.right(newState), newState]))
+
+// export const putType = (type: IoType, expression: ts.Expression): Derivate<DerivateState> =>
+//   pipe(
+//     deriver,
+//     chain(({context: { checker }}) =>
+      
+//     )
+//   )
+
 export const ask = <A>(f: (c: Context) => A): Derivate<A> => 
   pipe(
     R.ask<Context>(),
@@ -99,3 +133,10 @@ export const ask = <A>(f: (c: Context) => A): Derivate<A> =>
 // type OptionHandler = <A>(o: Option<A>) => Derivate<A>
 export const fromOption = (ifNone: DerivateError): (<A>(o: Option<A>) => Derivate<A>) =>
   op => isNone(op) ? error(ifNone) : of(op.value)
+
+export const deriver =
+  Do(derivate)
+    .sequenceS({
+      context: ask(identity),
+      state: get
+    }).done()

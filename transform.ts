@@ -1,18 +1,21 @@
 import * as D from './derivate';
-import { Derivate, unsupportedType, derivate, Exception, fromOption } from './derivate';
+import { Derivate, unsupportedType, derivate, error, fromOption, ask } from './derivate';
 import * as ts from 'typescript';
 import { Option, some, none, fold, map, option, fromNullable } from 'fp-ts/lib/Option';
 import { findFirst, zipWith, zip, range, chain } from 'fp-ts/lib/Array';
 import { Do } from 'fp-ts-contrib/lib/Do';
 import { pipe } from 'fp-ts/lib/pipeable'
-import { toName } from './syntaxKind';
+import { toName, flagToName, symbolFlagToName } from './syntaxKind';
 import * as E from 'fp-ts/lib/Either';
 import { Either, left, right, isLeft } from 'fp-ts/lib/Either';
-import { IoType, ioNumber, ioString, ioUnion, ioIntersection, ioStruct, Prop, ioStringLit, print, typeToExpression, ioNumberLit } from './ioTsTypes';
+import { IoType, ioNumber, ioString, ioUnion, ioIntersection, ioStruct, Prop, ioStringLit, print, typeToExpression, ioNumberLit, IoFunction, ioFunction } from './ioTsTypes';
 import * as S from 'fp-ts/lib/State';
 import * as R from 'fp-ts/lib/Reader';
+import * as O from 'fp-ts/lib/Option';
 import { array } from 'fp-ts/lib/Array';
-import { Console } from './console';
+import { Console, red, cyan } from './console';
+import { type } from 'os';
+import { sequenceT } from 'fp-ts/lib/Apply';
 
 const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
   Do(derivate)
@@ -47,6 +50,27 @@ const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
               array.sequence(derivate)(t.types.map(t => typeNodeToType(right(t)))),
               D.map(ts => ioIntersection(ts, t))
             )
+          } else if(t.isClass()) {
+            return D.error(unsupportedType(t, 'Class: ' + t.getSymbol()!.escapedName.toString()));
+          } else if(t.isClassOrInterface()) {
+            if(t.getConstructSignatures().length > 0) {
+              return D.error(unsupportedType(t, 'Interface with constructor signatures: ' + t.getSymbol()!.escapedName.toString()));
+            } else {
+              return pipe(
+                array.traverse(derivate)(t.getProperties(), prop => {
+                  if(!prop.valueDeclaration) {
+                    return D.error(D.exception(`valueDeclaration for prop: ${prop.getName()} doesn't exist!`))
+                  } else if(ts.isPropertySignature(prop.valueDeclaration)) {
+                    return toProp(prop.valueDeclaration);
+                  } else if(ts.isMethodSignature(prop.valueDeclaration)) {
+                    return toMethod(prop.valueDeclaration)
+                  } else {
+                    return D.error(D.exception(`Couldn't make heads or tails of this property? ${prop.getName()}`))
+                  }
+                }),
+                D.map(props => ioStruct(props, t))
+              );
+            }
           } else {
             // defaulting to struct
             return pipe(
@@ -55,6 +79,8 @@ const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
                   return D.error(D.exception(`valueDeclaration for prop: ${prop.getName()} doesn't exist!`))
                 } else if(ts.isPropertySignature(prop.valueDeclaration)) {
                   return toProp(prop.valueDeclaration);
+                } else if(ts.isMethodSignature(prop.valueDeclaration)) {
+                  return toMethod(prop.valueDeclaration)
                 } else {
                   return D.error(D.exception(`Couldn't make heads or tails of this property? ${prop.getName()}`))
                 }
@@ -68,42 +94,63 @@ const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
     .return(({type}) => type)
 
 const toProp = (propSig: ts.PropertySignature): Derivate<Prop> =>
+  toProperty(propSig.name.getText(), propSig.type)
+
+const toProperty = (name: string, type?: ts.TypeNode) =>
   pipe(
-    fromNullable(propSig.type),
-    fromOption(D.exception(`Property signature: ${propSig.getFullText()} has no type`)),
+    fromNullable(type),
+    fromOption(D.exception(`Property: ${name} has no type`)),
     D.chain(typ => typeNodeToType(left(typ))),
     D.map(type => ({
-      name: propSig.name.getText(),
+      name: name,
       type
     }))
   )
+
+const toMethod = (method: ts.MethodSignature): Derivate<Prop> =>
+  Do(derivate)
+    .bind('returnType', pipe(
+      fromNullable(method.type),
+      fromOption(D.exception(`Method: ${method.getFullText()} has no return type`)),
+      D.chain(typeNode => ask(c => c.checker.getTypeFromTypeNode(typeNode)))
+    ))
+    .sequenceSL(({returnType}) => ({
+      returnIoType: typeNodeToType(right(returnType)),
+      parametersIoType: 
+        array.traverse(derivate)(
+          // unkown only needed because original is readonly 
+          method.parameters as unknown as ts.ParameterDeclaration[],
+          param => toProperty(param.name.getText(), param.type)
+        )
+    }))
+    .return(({returnType, returnIoType, parametersIoType }) => ({
+      name: method.name.getText(),
+      type: ioFunction(parametersIoType, returnIoType, returnType)
+    }))
 
 export function deriveTransformer<T extends ts.Node>(checker: ts.TypeChecker, program: ts.Program): ts.TransformerFactory<T> {
   return context => {
     const visit: ts.Visitor = node => {
       return pipe(
         extractDeriveCall(checker)(node),
-        map(d => {
-          const [typ, {}] = typeNodeToType(left(d.type))({checker, program, source: d.type.getSourceFile(), deriveNode: d.type })({})
-          
-          return {
-            ...d,
-            typ
-          }
-        }),
-        fold(
+        O.fold(
           () => ts.visitEachChild(node, child => visit(child), context),
-          info => {
-            // console.log('For derive call: ', info.fullText)
-            // console.log(print(info.typ))
-            // console.log('----')
+          d => {
+            const [result, endState] = pipe(
+              typeNodeToType(left(d.type)),
+              D.chain(typeToExpression)
+            )({checker, program, source: node.getSourceFile(), deriveNode: node })({resolvedTypes: []})
+            if(isLeft(result)){
 
-            // checker.symbolToExpression()
-            // ts.createCall()
-            if(isLeft(info.typ)){
-              throw "LOL"
+              const { line, character } = node.getSourceFile().getLineAndCharacterOfPosition(node.getStart())
+              
+              throw new Error(
+                `Error building instance for expression: ${red(node.getText())} defined in ${cyan(node.getSourceFile().fileName)}:${line}:${character}\n` +
+                `\n` + 
+                `${result.left.map(D.printError).join('\n')}\n`)
+
             } else {
-              return typeToExpression(info.typ.right)
+              return result.right;
             }
           }
         )
@@ -162,9 +209,14 @@ function sp(n: number, padding: string = ' '): string {
   return str;
 }
 
+function resolveType(node: ts.TypeNode, t: ts.Type): Derivate<Option<ts.Expression>> {
+  ask(({checker}) => {
+    checker.getSymbolsInScope(node, ts.SymbolFlags.Value)
+    
+  })
+  // isAssignable has _just_ been made "public":
+  // https://github.com/microsoft/TypeScript/pull/33263/files#diff-c3ed224e4daa84352f7f1abcd23e8ccaR525-R527
+}
 
-const wrap = (c: Console) => (s: string) => c + s + Console.Reset
-const cyan = wrap(Console.FgCyan)
-const dim = wrap(Console.Dim)
-const red = wrap(Console.FgRed)
-const yellah = wrap(Console.FgYellow)
+// function isAssignableTo(source: ts.Type, target: ts.Type) {
+// }

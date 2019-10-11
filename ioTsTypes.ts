@@ -1,4 +1,9 @@
 import * as ts from "typescript"
+import { Derivate } from "./derivate"
+import * as D from './derivate'
+import { Do } from "fp-ts-contrib/lib/Do"
+import { pipe } from "fp-ts/lib/pipeable"
+import { array } from "fp-ts/lib/Array"
 
 /**
  * struct
@@ -11,7 +16,7 @@ type BaseIoType = {
   type: ts.Type
 }
 
-export type IoType = BaseIoType & (IoString | IoStringLit | IoNumber | IoNumberLit | IoAny | IoStruct | IoUnion | IoIntersection)
+export type IoType = BaseIoType & (IoString | IoStringLit | IoNumber | IoNumberLit | IoAny | IoStruct | IoUnion | IoIntersection | IoFunction)
 
 export type IoString = {_type: 'string'}
 export const ioString = (type: ts.Type): IoType => ({_type: 'string', type})
@@ -35,6 +40,9 @@ export const ioUnion = (types: IoType[], type: ts.Type): IoType => ({ _type: 'un
 export type IoIntersection = {_type: 'intersection', types: IoType[]}
 export const ioIntersection = (types: IoType[], type: ts.Type): IoType => ({ _type: 'intersection', types, type })
 
+export type IoFunction = {_type: 'function', parameters: Prop[], returnType: IoType}
+export const ioFunction = (parameters: Prop[], returnType: IoType, type: ts.Type): IoType => ({ _type: 'function', parameters, returnType, type })
+
 export type Prop = { name: string, type: IoType }
 export const prop = (name: string, type: IoType): Prop => ({name, type})
 
@@ -47,6 +55,7 @@ type Matchers<Z> = {
   struct: (i: IoStruct) => Z,
   union: (i: IoUnion) => Z,
   intersection: (i: IoIntersection) => Z,
+  function: (i: IoFunction) => Z,
 }
 
 function match(t: IoType): <Z>(m: Matchers<Z>) => Z {
@@ -60,6 +69,7 @@ function match(t: IoType): <Z>(m: Matchers<Z>) => Z {
       case 'struct': return m.struct(t)
       case 'union': return m.union(t)
       case 'intersection': return m.intersection(t)
+      case 'function': return m.function(t)
     }
   }
 }
@@ -79,6 +89,7 @@ export function print(outer: IoType, indentSize: number = 2): string {
       },
       union: i => i.types.map(t => inner(indent, t)).join(' | ') ,
       intersection: i => i.types.map(t => inner(indent, t)).join(' & '),
+      function: i => '(' + i.parameters.map((p, i) => p.name + ': ' + print(p.type, indentSize)) + ') => ' + print(i.returnType, indentSize)
     })
   }
   return inner(0, outer);
@@ -90,39 +101,57 @@ const indentTo = (n: number, s: string): string => {
   return str + s;
 }
 
-const accessT = (s: string): ts.PropertyAccessExpression =>
-  ts.createPropertyAccess(
+const accessT = (s: string): Derivate<ts.PropertyAccessExpression> =>
+  D.of(ts.createPropertyAccess(
     ts.createIdentifier('t'),
     ts.createIdentifier(s)
-  )
+  ))
 
 type Call = (...args: ts.Expression[]) => ts.CallExpression
 
-const callT = (s: string): Call => 
-  (...args) => ts.createCall(
+const callT = (s: string): ((...args: ts.Expression[]) => Derivate<ts.CallExpression>) =>
+  (...args) => pipe(
     accessT(s),
-    undefined,
-    args
+    D.map(str => ts.createCall(
+      str,
+      undefined,
+      args
+    ))
   )
 
-export function typeToExpression(t: IoType): ts.Expression {
-  return match(t)<ts.Expression>({
+
+export const typeToExpression = (t: IoType): Derivate<ts.Expression> =>
+  match(t)<Derivate<ts.Expression>>({
     string: i => accessT('string'),
     stringLit: i => callT('literal')(ts.createLiteral(`'${i.value}'`)),
     number: i => accessT('number'),
     numberLit: i => callT('literal')(ts.createLiteral(i.value)),
     any: i => accessT('unknown'),
-    struct: i => callT('struct')(ts.createObjectLiteral(structToProperties(i), true)),
-    union: i => callT('union')(ts.createArrayLiteral(i.types.map(typeToExpression))),
-    intersection: i => callT('intersection')(ts.createArrayLiteral(i.types.map(typeToExpression))),
+    struct: i => 
+      pipe(
+        structToProperties(i),
+        D.map(ts.createObjectLiteral),
+        D.chain(callT('struct'))
+      ),
+    union: i =>
+      pipe(
+        array.traverse(D.derivate)(i.types, typeToExpression),
+        D.map(ts.createArrayLiteral),
+        D.chain(callT('union'))
+      ),
+    intersection: i =>
+      pipe(
+        array.traverse(D.derivate)(i.types, typeToExpression),
+        D.map(ts.createArrayLiteral),
+        D.chain(callT('union'))
+      ),
+    function: i => accessT('Function')
   })
-}
 
-export function structToProperties(i: IoStruct): ts.PropertyAssignment[] {
-  return i.props.map(p => 
-    ts.createPropertyAssignment(
-      p.name,
-      typeToExpression(p.type)
+export const structToProperties = (i: IoStruct): Derivate<ts.PropertyAssignment[]> => 
+  array.traverse(D.derivate)(i.props, p => 
+    pipe(
+      typeToExpression(p.type),
+      D.map(typ => ts.createPropertyAssignment(p.name, typ))
     )
   )
-}

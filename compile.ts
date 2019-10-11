@@ -10,9 +10,9 @@ if(source){
 
   const result = ts.transform(source, [deriveTransformer(checker, program)])
 
-  console.log('/** Transforming: **/')
-  console.log(ts.createPrinter().printFile(source))
-  console.log('/** Into: **/')
-  console.log(ts.createPrinter().printFile(result.transformed[0]))
-  console.log('/****/')
+  console.log('/** Transforming: **/');
+  console.log(ts.createPrinter().printFile(source));
+  console.log('/** Into: **/');
+  console.log(ts.createPrinter().printFile(result.transformed[0]));
+  console.log('/****/');
 }

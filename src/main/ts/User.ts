@@ -1,8 +1,10 @@
 
-export type User = {
+export interface User {
   name: string,
   age?: number,
-  img: Image
+  //img: Image,
+  // lastLogin: Date,
+  // created: Date
 }
 
 export type Image = {
