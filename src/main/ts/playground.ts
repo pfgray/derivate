@@ -9,12 +9,9 @@ import { User } from './User';
     t.type({name: t.string}),
     t.partial({age: t.number})
   ])
-  
 
   t.boolean
 }
-
-
 
 const a = t.type({
   name: t.string,

@@ -1,21 +1,18 @@
 import * as D from './derivate';
-import { Derivate, unsupportedType, derivate, error, fromOption, ask } from './derivate';
+import { Derivate, unsupportedType, derivate, error, convert, ask, ExpressionResolver, TypeQueryResult, get } from './derivate';
 import * as ts from 'typescript';
 import { Option, some, none, fold, map, option, fromNullable } from 'fp-ts/lib/Option';
 import { findFirst, zipWith, zip, range, chain } from 'fp-ts/lib/Array';
 import { Do } from 'fp-ts-contrib/lib/Do';
 import { pipe } from 'fp-ts/lib/pipeable'
-import { toName, flagToName, symbolFlagToName } from './syntaxKind';
+import { syntaxKindtoName, typeFlagToName, symbolFlagToName } from './syntaxKind';
 import * as E from 'fp-ts/lib/Either';
 import { Either, left, right, isLeft } from 'fp-ts/lib/Either';
 import { IoType, ioNumber, ioString, ioUnion, ioIntersection, ioStruct, Prop, ioStringLit, print, typeToExpression, ioNumberLit, IoFunction, ioFunction } from './ioTsTypes';
-import * as S from 'fp-ts/lib/State';
-import * as R from 'fp-ts/lib/Reader';
 import * as O from 'fp-ts/lib/Option';
 import { array } from 'fp-ts/lib/Array';
 import { Console, red, cyan } from './console';
-import { type } from 'os';
-import { sequenceT } from 'fp-ts/lib/Apply';
+import * as A from 'fp-ts/lib/Array';
 
 const typeNodeToType = (node: Either<ts.TypeNode, ts.Type>): Derivate<IoType> =>
   Do(derivate)
@@ -99,7 +96,7 @@ const toProp = (propSig: ts.PropertySignature): Derivate<Prop> =>
 const toProperty = (name: string, type?: ts.TypeNode) =>
   pipe(
     fromNullable(type),
-    fromOption(D.exception(`Property: ${name} has no type`)),
+    convert(D.exception(`Property: ${name} has no type`)),
     D.chain(typ => typeNodeToType(left(typ))),
     D.map(type => ({
       name: name,
@@ -111,7 +108,7 @@ const toMethod = (method: ts.MethodSignature): Derivate<Prop> =>
   Do(derivate)
     .bind('returnType', pipe(
       fromNullable(method.type),
-      fromOption(D.exception(`Method: ${method.getFullText()} has no return type`)),
+      convert(D.exception(`Method: ${method.getFullText()} has no return type`)),
       D.chain(typeNode => ask(c => c.checker.getTypeFromTypeNode(typeNode)))
     ))
     .sequenceSL(({returnType}) => ({
@@ -128,7 +125,7 @@ const toMethod = (method: ts.MethodSignature): Derivate<Prop> =>
       type: ioFunction(parametersIoType, returnIoType, returnType)
     }))
 
-export function deriveTransformer<T extends ts.Node>(checker: ts.TypeChecker, program: ts.Program): ts.TransformerFactory<T> {
+export function deriveTransformer<T extends ts.Node>(checker: ts.TypeChecker, program: ts.Program, resolver: ExpressionResolver): ts.TransformerFactory<T> {
   return context => {
     const visit: ts.Visitor = node => {
       return pipe(
@@ -136,9 +133,9 @@ export function deriveTransformer<T extends ts.Node>(checker: ts.TypeChecker, pr
         O.fold(
           () => ts.visitEachChild(node, child => visit(child), context),
           d => {
+            
             const [result, endState] = pipe(
-              typeNodeToType(left(d.type)),
-              D.chain(typeToExpression)
+              resolver(d.type)
             )({checker, program, source: node.getSourceFile(), deriveNode: node })({resolvedTypes: []})
             if(isLeft(result)){
 
@@ -161,6 +158,43 @@ export function deriveTransformer<T extends ts.Node>(checker: ts.TypeChecker, pr
 
     return node => ts.visitNode(node, visit);
   };
+}
+
+// search for typeclasses:
+// wrap source type in typeclass
+// 
+// search for symbols where the source type is assignable to the symbol
+
+
+
+
+// todo: fit resolution context  in here -> struct | tuple | intersection | union, etc
+// queryContext
+
+export function queryType(type: ts.Type): Derivate<Option<TypeQueryResult>> =>
+  // pipe(
+  //   get,
+  //   D.chain(state => {
+  //     pipe(
+  //       state.queries.resolved,
+  //       A.findFirst(a => a.type)
+  //     )
+  //   })
+  // )
+
+/**
+ * Finds a typeclass instance for a given type
+ * @param t 
+ */
+export function findType(t: ts.Type): Derivate<Option<ts.Expression>> {
+
+}
+
+export function doIt(resolver: ExpressionResolver): (t: ts.Type) => Derivate<ts.Expression> {
+  Do(derivate)
+    .bind('foundType', )
+  // todo: look up types here?
+  return t => resolver(t, doIt(resolver));
 }
 
 type DeriveInvocation = {
@@ -207,6 +241,10 @@ function sp(n: number, padding: string = ' '): string {
     str += padding
   }
   return str;
+}
+
+function isAssignableTo(source: ts.Type, target: ts.Type): boolean {
+  return true;
 }
 
 function resolveType(node: ts.TypeNode, t: ts.Type): Derivate<Option<ts.Expression>> {

@@ -2,7 +2,7 @@
 export interface User {
   name: string,
   age?: number,
-  //img: Image,
+  // img: Image,
   // lastLogin: Date,
   // created: Date
 }

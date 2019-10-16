@@ -9,7 +9,6 @@ import { Type } from 'io-ts';
 
 {
   const dateC: Type<Date> = null as any;
-
   __derive<User>()
 }
 

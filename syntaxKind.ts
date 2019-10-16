@@ -1,6 +1,6 @@
-import { SyntaxKind, TypeFlags, SymbolFlags } from "typescript";
+import { SyntaxKind, TypeFlags, SymbolFlags, NodeFlags } from "typescript";
 
-export function toName(s: SyntaxKind): string {
+export function syntaxKindtoName(s: SyntaxKind): string {
   switch (s) {
     case SyntaxKind.Unknown:
       return "Unknown";
@@ -708,118 +708,285 @@ export function toName(s: SyntaxKind): string {
   }
 }
 
-
-
-export function flagToName(flag: TypeFlags): string {
-switch(flag){
-case TypeFlags.Any: return "Any";
-case TypeFlags.Unknown: return "Unknown";
-case TypeFlags.String: return "String";
-case TypeFlags.Number: return "Number";
-case TypeFlags.Boolean: return "Boolean";
-case TypeFlags.Enum: return "Enum";
-case TypeFlags.BigInt: return "BigInt";
-case TypeFlags.StringLiteral: return "StringLiteral";
-case TypeFlags.NumberLiteral: return "NumberLiteral";
-case TypeFlags.BooleanLiteral: return "BooleanLiteral";
-case TypeFlags.EnumLiteral: return "EnumLiteral";
-case TypeFlags.BigIntLiteral: return "BigIntLiteral";
-case TypeFlags.ESSymbol: return "ESSymbol";
-case TypeFlags.UniqueESSymbol: return "UniqueESSymbol";
-case TypeFlags.Void: return "Void";
-case TypeFlags.Undefined: return "Undefined";
-case TypeFlags.Null: return "Null";
-case TypeFlags.Never: return "Never";
-case TypeFlags.TypeParameter: return "TypeParameter";
-case TypeFlags.Object: return "Object";
-case TypeFlags.Union: return "Union";
-case TypeFlags.Intersection: return "Intersection";
-case TypeFlags.Index: return "Index";
-case TypeFlags.IndexedAccess: return "IndexedAccess";
-case TypeFlags.Conditional: return "Conditional";
-case TypeFlags.Substitution: return "Substitution";
-case TypeFlags.NonPrimitive: return "NonPrimitive";
-case TypeFlags.Literal: return "Literal";
-case TypeFlags.Unit: return "Unit";
-case TypeFlags.StringOrNumberLiteral: return "StringOrNumberLiteral";
-case TypeFlags.PossiblyFalsy: return "PossiblyFalsy";
-case TypeFlags.StringLike: return "StringLike";
-case TypeFlags.NumberLike: return "NumberLike";
-case TypeFlags.BigIntLike: return "BigIntLike";
-case TypeFlags.BooleanLike: return "BooleanLike";
-case TypeFlags.EnumLike: return "EnumLike";
-case TypeFlags.ESSymbolLike: return "ESSymbolLike";
-case TypeFlags.VoidLike: return "VoidLike";
-case TypeFlags.UnionOrIntersection: return "UnionOrIntersection";
-case TypeFlags.StructuredType: return "StructuredType";
-case TypeFlags.TypeVariable: return "TypeVariable";
-case TypeFlags.InstantiableNonPrimitive: return "InstantiableNonPrimitive";
-case TypeFlags.InstantiablePrimitive: return "InstantiablePrimitive";
-case TypeFlags.Instantiable: return "Instantiable";
-case TypeFlags.StructuredOrInstantiable: return "StructuredOrInstantiable";
-case TypeFlags.Narrowable: return "Narrowable";
-case TypeFlags.NotUnionOrUnit: return "NotUnionOrUnit";
-}}
+export function typeFlagToName(flag: TypeFlags): string {
+  switch (flag) {
+    case TypeFlags.Any:
+      return "Any";
+    case TypeFlags.Unknown:
+      return "Unknown";
+    case TypeFlags.String:
+      return "String";
+    case TypeFlags.Number:
+      return "Number";
+    case TypeFlags.Boolean:
+      return "Boolean";
+    case TypeFlags.Enum:
+      return "Enum";
+    case TypeFlags.BigInt:
+      return "BigInt";
+    case TypeFlags.StringLiteral:
+      return "StringLiteral";
+    case TypeFlags.NumberLiteral:
+      return "NumberLiteral";
+    case TypeFlags.BooleanLiteral:
+      return "BooleanLiteral";
+    case TypeFlags.EnumLiteral:
+      return "EnumLiteral";
+    case TypeFlags.BigIntLiteral:
+      return "BigIntLiteral";
+    case TypeFlags.ESSymbol:
+      return "ESSymbol";
+    case TypeFlags.UniqueESSymbol:
+      return "UniqueESSymbol";
+    case TypeFlags.Void:
+      return "Void";
+    case TypeFlags.Undefined:
+      return "Undefined";
+    case TypeFlags.Null:
+      return "Null";
+    case TypeFlags.Never:
+      return "Never";
+    case TypeFlags.TypeParameter:
+      return "TypeParameter";
+    case TypeFlags.Object:
+      return "Object";
+    case TypeFlags.Union:
+      return "Union";
+    case TypeFlags.Intersection:
+      return "Intersection";
+    case TypeFlags.Index:
+      return "Index";
+    case TypeFlags.IndexedAccess:
+      return "IndexedAccess";
+    case TypeFlags.Conditional:
+      return "Conditional";
+    case TypeFlags.Substitution:
+      return "Substitution";
+    case TypeFlags.NonPrimitive:
+      return "NonPrimitive";
+    case TypeFlags.Literal:
+      return "Literal";
+    case TypeFlags.Unit:
+      return "Unit";
+    case TypeFlags.StringOrNumberLiteral:
+      return "StringOrNumberLiteral";
+    case TypeFlags.PossiblyFalsy:
+      return "PossiblyFalsy";
+    case TypeFlags.StringLike:
+      return "StringLike";
+    case TypeFlags.NumberLike:
+      return "NumberLike";
+    case TypeFlags.BigIntLike:
+      return "BigIntLike";
+    case TypeFlags.BooleanLike:
+      return "BooleanLike";
+    case TypeFlags.EnumLike:
+      return "EnumLike";
+    case TypeFlags.ESSymbolLike:
+      return "ESSymbolLike";
+    case TypeFlags.VoidLike:
+      return "VoidLike";
+    case TypeFlags.UnionOrIntersection:
+      return "UnionOrIntersection";
+    case TypeFlags.StructuredType:
+      return "StructuredType";
+    case TypeFlags.TypeVariable:
+      return "TypeVariable";
+    case TypeFlags.InstantiableNonPrimitive:
+      return "InstantiableNonPrimitive";
+    case TypeFlags.InstantiablePrimitive:
+      return "InstantiablePrimitive";
+    case TypeFlags.Instantiable:
+      return "Instantiable";
+    case TypeFlags.StructuredOrInstantiable:
+      return "StructuredOrInstantiable";
+    case TypeFlags.Narrowable:
+      return "Narrowable";
+    case TypeFlags.NotUnionOrUnit:
+      return "NotUnionOrUnit";
+  }
+}
 
 export function symbolFlagToName(s: SymbolFlags): string {
-  switch(s) {
-case SymbolFlags.None: return "None";
-case SymbolFlags.FunctionScopedVariable: return "FunctionScopedVariable";
-case SymbolFlags.BlockScopedVariable: return "BlockScopedVariable";
-case SymbolFlags.Property: return "Property";
-case SymbolFlags.EnumMember: return "EnumMember";
-case SymbolFlags.Function: return "Function";
-case SymbolFlags.Class: return "Class";
-case SymbolFlags.Interface: return "Interface";
-case SymbolFlags.ConstEnum: return "ConstEnum";
-case SymbolFlags.RegularEnum: return "RegularEnum";
-case SymbolFlags.ValueModule: return "ValueModule";
-case SymbolFlags.NamespaceModule: return "NamespaceModule";
-case SymbolFlags.TypeLiteral: return "TypeLiteral";
-case SymbolFlags.ObjectLiteral: return "ObjectLiteral";
-case SymbolFlags.Method: return "Method";
-case SymbolFlags.Constructor: return "Constructor";
-case SymbolFlags.GetAccessor: return "GetAccessor";
-case SymbolFlags.SetAccessor: return "SetAccessor";
-case SymbolFlags.Signature: return "Signature";
-case SymbolFlags.TypeParameter: return "TypeParameter";
-case SymbolFlags.TypeAlias: return "TypeAlias";
-case SymbolFlags.ExportValue: return "ExportValue";
-case SymbolFlags.Alias: return "Alias";
-case SymbolFlags.Prototype: return "Prototype";
-case SymbolFlags.ExportStar: return "ExportStar";
-case SymbolFlags.Optional: return "Optional";
-case SymbolFlags.Transient: return "Transient";
-case SymbolFlags.Assignment: return "Assignment";
-case SymbolFlags.ModuleExports: return "ModuleExports";
-case SymbolFlags.Enum: return "Enum";
-case SymbolFlags.Variable: return "Variable";
-case SymbolFlags.Value: return "Value";
-case SymbolFlags.Type: return "Type";
-case SymbolFlags.Namespace: return "Namespace";
-case SymbolFlags.Module: return "Module";
-case SymbolFlags.Accessor: return "Accessor";
-case SymbolFlags.FunctionScopedVariableExcludes: return "FunctionScopedVariableExcludes";
-case SymbolFlags.BlockScopedVariableExcludes: return "BlockScopedVariableExcludes";
-case SymbolFlags.ParameterExcludes: return "ParameterExcludes";
-case SymbolFlags.PropertyExcludes: return "PropertyExcludes";
-case SymbolFlags.EnumMemberExcludes: return "EnumMemberExcludes";
-case SymbolFlags.FunctionExcludes: return "FunctionExcludes";
-case SymbolFlags.ClassExcludes: return "ClassExcludes";
-case SymbolFlags.InterfaceExcludes: return "InterfaceExcludes";
-case SymbolFlags.RegularEnumExcludes: return "RegularEnumExcludes";
-case SymbolFlags.ConstEnumExcludes: return "ConstEnumExcludes";
-case SymbolFlags.ValueModuleExcludes: return "ValueModuleExcludes";
-case SymbolFlags.NamespaceModuleExcludes: return "NamespaceModuleExcludes";
-case SymbolFlags.MethodExcludes: return "MethodExcludes";
-case SymbolFlags.GetAccessorExcludes: return "GetAccessorExcludes";
-case SymbolFlags.SetAccessorExcludes: return "SetAccessorExcludes";
-case SymbolFlags.TypeParameterExcludes: return "TypeParameterExcludes";
-case SymbolFlags.TypeAliasExcludes: return "TypeAliasExcludes";
-case SymbolFlags.AliasExcludes: return "AliasExcludes";
-case SymbolFlags.ModuleMember: return "ModuleMember";
-case SymbolFlags.ExportHasLocal: return "ExportHasLocal";
-case SymbolFlags.BlockScoped: return "BlockScoped";
-case SymbolFlags.PropertyOrAccessor: return "PropertyOrAccessor";
-case SymbolFlags.ClassMember: return "ClassMember";
-  }}
+  switch (s) {
+    case SymbolFlags.None:
+      return "None";
+    case SymbolFlags.FunctionScopedVariable:
+      return "FunctionScopedVariable";
+    case SymbolFlags.BlockScopedVariable:
+      return "BlockScopedVariable";
+    case SymbolFlags.Property:
+      return "Property";
+    case SymbolFlags.EnumMember:
+      return "EnumMember";
+    case SymbolFlags.Function:
+      return "Function";
+    case SymbolFlags.Class:
+      return "Class";
+    case SymbolFlags.Interface:
+      return "Interface";
+    case SymbolFlags.ConstEnum:
+      return "ConstEnum";
+    case SymbolFlags.RegularEnum:
+      return "RegularEnum";
+    case SymbolFlags.ValueModule:
+      return "ValueModule";
+    case SymbolFlags.NamespaceModule:
+      return "NamespaceModule";
+    case SymbolFlags.TypeLiteral:
+      return "TypeLiteral";
+    case SymbolFlags.ObjectLiteral:
+      return "ObjectLiteral";
+    case SymbolFlags.Method:
+      return "Method";
+    case SymbolFlags.Constructor:
+      return "Constructor";
+    case SymbolFlags.GetAccessor:
+      return "GetAccessor";
+    case SymbolFlags.SetAccessor:
+      return "SetAccessor";
+    case SymbolFlags.Signature:
+      return "Signature";
+    case SymbolFlags.TypeParameter:
+      return "TypeParameter";
+    case SymbolFlags.TypeAlias:
+      return "TypeAlias";
+    case SymbolFlags.ExportValue:
+      return "ExportValue";
+    case SymbolFlags.Alias:
+      return "Alias";
+    case SymbolFlags.Prototype:
+      return "Prototype";
+    case SymbolFlags.ExportStar:
+      return "ExportStar";
+    case SymbolFlags.Optional:
+      return "Optional";
+    case SymbolFlags.Transient:
+      return "Transient";
+    case SymbolFlags.Assignment:
+      return "Assignment";
+    case SymbolFlags.ModuleExports:
+      return "ModuleExports";
+    case SymbolFlags.Enum:
+      return "Enum";
+    case SymbolFlags.Variable:
+      return "Variable";
+    case SymbolFlags.Value:
+      return "Value";
+    case SymbolFlags.Type:
+      return "Type";
+    case SymbolFlags.Namespace:
+      return "Namespace";
+    case SymbolFlags.Module:
+      return "Module";
+    case SymbolFlags.Accessor:
+      return "Accessor";
+    case SymbolFlags.FunctionScopedVariableExcludes:
+      return "FunctionScopedVariableExcludes";
+    case SymbolFlags.BlockScopedVariableExcludes:
+      return "BlockScopedVariableExcludes";
+    case SymbolFlags.ParameterExcludes:
+      return "ParameterExcludes";
+    case SymbolFlags.PropertyExcludes:
+      return "PropertyExcludes";
+    case SymbolFlags.EnumMemberExcludes:
+      return "EnumMemberExcludes";
+    case SymbolFlags.FunctionExcludes:
+      return "FunctionExcludes";
+    case SymbolFlags.ClassExcludes:
+      return "ClassExcludes";
+    case SymbolFlags.InterfaceExcludes:
+      return "InterfaceExcludes";
+    case SymbolFlags.RegularEnumExcludes:
+      return "RegularEnumExcludes";
+    case SymbolFlags.ConstEnumExcludes:
+      return "ConstEnumExcludes";
+    case SymbolFlags.ValueModuleExcludes:
+      return "ValueModuleExcludes";
+    case SymbolFlags.NamespaceModuleExcludes:
+      return "NamespaceModuleExcludes";
+    case SymbolFlags.MethodExcludes:
+      return "MethodExcludes";
+    case SymbolFlags.GetAccessorExcludes:
+      return "GetAccessorExcludes";
+    case SymbolFlags.SetAccessorExcludes:
+      return "SetAccessorExcludes";
+    case SymbolFlags.TypeParameterExcludes:
+      return "TypeParameterExcludes";
+    case SymbolFlags.TypeAliasExcludes:
+      return "TypeAliasExcludes";
+    case SymbolFlags.AliasExcludes:
+      return "AliasExcludes";
+    case SymbolFlags.ModuleMember:
+      return "ModuleMember";
+    case SymbolFlags.ExportHasLocal:
+      return "ExportHasLocal";
+    case SymbolFlags.BlockScoped:
+      return "BlockScoped";
+    case SymbolFlags.PropertyOrAccessor:
+      return "PropertyOrAccessor";
+    case SymbolFlags.ClassMember:
+      return "ClassMember";
+  }
+}
+
+export function nodeFlagToName(s: NodeFlags): string {
+  switch (s) {
+    case NodeFlags.None:
+      return "None";
+    case NodeFlags.Let:
+      return "Let";
+    case NodeFlags.Const:
+      return "Const";
+    case NodeFlags.NestedNamespace:
+      return "NestedNamespace";
+    case NodeFlags.Synthesized:
+      return "Synthesized";
+    case NodeFlags.Namespace:
+      return "Namespace";
+    case NodeFlags.OptionalChain:
+      return "OptionalChain";
+    case NodeFlags.ExportContext:
+      return "ExportContext";
+    case NodeFlags.ContainsThis:
+      return "ContainsThis";
+    case NodeFlags.HasImplicitReturn:
+      return "HasImplicitReturn";
+    case NodeFlags.HasExplicitReturn:
+      return "HasExplicitReturn";
+    case NodeFlags.GlobalAugmentation:
+      return "GlobalAugmentation";
+    case NodeFlags.HasAsyncFunctions:
+      return "HasAsyncFunctions";
+    case NodeFlags.DisallowInContext:
+      return "DisallowInContext";
+    case NodeFlags.YieldContext:
+      return "YieldContext";
+    case NodeFlags.DecoratorContext:
+      return "DecoratorContext";
+    case NodeFlags.AwaitContext:
+      return "AwaitContext";
+    case NodeFlags.ThisNodeHasError:
+      return "ThisNodeHasError";
+    case NodeFlags.JavaScriptFile:
+      return "JavaScriptFile";
+    case NodeFlags.ThisNodeOrAnySubNodesHasError:
+      return "ThisNodeOrAnySubNodesHasError";
+    case NodeFlags.HasAggregatedChildData:
+      return "HasAggregatedChildData";
+    case NodeFlags.JSDoc:
+      return "JSDoc";
+    case NodeFlags.JsonFile:
+      return "JsonFile";
+    case NodeFlags.BlockScoped:
+      return "BlockScoped";
+    case NodeFlags.ReachabilityCheckFlags:
+      return "ReachabilityCheckFlags";
+    case NodeFlags.ReachabilityAndEmitFlags:
+      return "ReachabilityAndEmitFlags";
+    case NodeFlags.ContextFlags:
+      return "ContextFlags";
+    case NodeFlags.TypeExcludesFlags:
+      return "TypeExcludesFlags";
+  }
+}

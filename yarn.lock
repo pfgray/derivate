@@ -22,7 +22,7 @@ io-ts@^2.0.1:
   resolved "https://registry.yarnpkg.com/io-ts/-/io-ts-2.0.1.tgz#1261c12f915c2f48d16393a36966636b48a45aa1"
   integrity sha512-RezD+WcCfW4VkMkEcQWL/Nmy/nqsWTvTYg7oUmTGzglvSSV2P9h2z1PVeREPFf0GWNzruYleAt1XCMQZSg1xxQ==
 
-typescript@^3.7.0-dev.20190824:
-  version "3.7.0-dev.20191005"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.0-dev.20191005.tgz#f7d630ccf65d2d84cf4b3cb81425cc9389e0ea30"
-  integrity sha512-nXjfXw9lJ0dnILqSMYWzOVf0gISKb7nHxVuh0DMqgSb4T9dRkZh/+wM+/bU8STyZW50MZfsW9cFDH40i6+JSnQ==
+typescript@3.7.0-dev.20191013:
+  version "3.7.0-dev.20191013"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.7.0-dev.20191013.tgz#a05c662f91826829ce8f68e02507a2efa40df1e9"
+  integrity sha512-YQYixdtIJJT9sLjbmrZ5WXqABas3DfVzIFVQj9mT/NkU16k/7mtVnvJlk5O7UpiZ3N5QsPzyt0Isbmu0eu2imw==

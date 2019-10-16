@@ -13,10 +13,21 @@ import { Option, isNone } from 'fp-ts/lib/Option';
 import { ADT, match } from './adt';
 import { red } from './console';
 import { identity } from 'fp-ts/lib/function';
-import { IoType } from './ioTsTypes';
+
+export type TypeQueryResult = ADT<{
+  queried: { type: ts.Type },
+  resolved: { type: ts.Type, expression: ts.Expression }
+}>
+
+export type TypeQueryContext = {
+  queried: { type: ts.Type }[],
+  resolved: { type: ts.Type, expression: ts.Expression }[]
+}
+
+export type ExpressionResolver = (t: ts.Type, recurse: (t: ts.Type) => Derivate<ts.Expression>) => Derivate<ts.Expression>
 
 export type DerivateState = {
-  resolvedTypes: [ts.Type, ts.Expression][]
+  queries: TypeQueryContext
 }
 
 export type DerivateError = ADT<{
@@ -131,7 +142,7 @@ export const ask = <A>(f: (c: Context) => A): Derivate<A> =>
   )
 
 // type OptionHandler = <A>(o: Option<A>) => Derivate<A>
-export const fromOption = (ifNone: DerivateError): (<A>(o: Option<A>) => Derivate<A>) =>
+export const convert = (ifNone: DerivateError): (<A>(o: Option<A>) => Derivate<A>) =>
   op => isNone(op) ? error(ifNone) : of(op.value)
 
 export const deriver =
@@ -140,3 +151,5 @@ export const deriver =
       context: ask(identity),
       state: get
     }).done()
+
+
