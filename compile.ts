@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
 import { testTransformer } from './transform2';
-import { expressionBuilder } from './io-ts-deriver';
+import { IoTsDeriver } from './io-ts-deriver';
 
 const program = ts.createProgram(['./src/main/ts/simple.ts'], {});
 const checker = program.getTypeChecker();
@@ -10,7 +10,7 @@ const printer = ts.createPrinter();
 if(source) {
 
   const result = ts.transform(source, [
-    testTransformer(checker, program, source, expressionBuilder)
+    testTransformer(checker, program, source, IoTsDeriver)
   ])
 
   console.log('/** Transforming: **/');

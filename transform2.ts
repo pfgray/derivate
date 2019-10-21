@@ -16,25 +16,20 @@ import { fromNullable } from "fp-ts/lib/Either";
 import { Type } from "io-ts";
 import { Eq } from "fp-ts/lib/Eq";
 import { Lens } from "monocle-ts";
-import { ADT } from "./adt";
-import { PassThrough } from "stream";
+import { Deriver } from "./deriver";
 
 type ExpressionBuilder = (
   type: ts.Type,
   advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>
-) => D.Derivate<ts.Expression>
+) => D.Derivate<ts.Expression>;
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 
-type Extractor = (node: ts.Node) => D.Derivate<O.Option<ts.Type>>;
-
-const extract = <A extends ts.Node>(
-  f: (u: ts.Node) => u is A
-): ((n: ts.Node) => O.Option<A>) => u => (f(u) ? O.some(u) : O.none);
+export type Extractor = (node: ts.Node) => D.Derivate<O.Option<ts.Type>>;
 
 type Access<O, K> = K extends keyof O ? O[K] : never;
 
-const access = <K extends string>(
+export const access = <K extends string>(
   key: K
 ): (<O extends object>(o: O) => Access<O, K>) => o => (o as any)[key];
 
@@ -45,17 +40,13 @@ const tap = <A>(f: (a: A) => void): ((a: A) => A) => a => {
 
 const log = (s: string): (<A>(a: A) => A) => tap(a => console.log(s, a));
 
-const FuncName = "__derive";
-const ModuleName = "./derive";
-
-const isStr = <K extends string>(k: K): ((s: string) => O.Option<K>) => s =>
-  s === k ? O.some(s as K) : O.none;
-
 /**
  * Get the _real_ (or, 'original') name of the first named import
  * in this NamedImports.
  */
-const extractNameFromNamedImports = (ni: ts.NamedImports): O.Option<string> =>
+export const extractNameFromNamedImports = (
+  ni: ts.NamedImports
+): O.Option<string> =>
   pipe(
     O.fromNullable(ni.elements[0]),
     O.map(el =>
@@ -67,7 +58,11 @@ const extractNameFromNamedImports = (ni: ts.NamedImports): O.Option<string> =>
     )
   );
 
-const extractModuleNameFromNamedImports = (
+export const extract = <A extends ts.Node>(
+  f: (u: ts.Node) => u is A
+): ((n: ts.Node) => O.Option<A>) => u => (f(u) ? O.some(u) : O.none);
+
+export const extractModuleNameFromNamedImports = (
   ni: ts.NamedImports
 ): O.Option<string> =>
   pipe(
@@ -76,81 +71,16 @@ const extractModuleNameFromNamedImports = (
     O.map(access("text"))
   );
 
-const myExtractor: Extractor = node =>
-  pipe(
-    D.deriver,
-    D.map(({ context: { checker } }) =>
-      Do(O.option)
-        .bind("ce", extract(ts.isCallExpression)(node))
-        .bindL(
-          "ni",
-          flow(
-            access("ce"),
-            access("expression"),
-            extract(ts.isIdentifier),
-            O.chain(n => O.fromNullable(checker.getSymbolAtLocation(n))),
-            O.chain(s => O.fromNullable(s.declarations[0])),
-            O.map(d => d.parent),
-            O.chain(extract(ts.isNamedImports))
-          )
-        )
-        .bindL(
-          "functionName",
-          flow(
-            access("ni"),
-            extractNameFromNamedImports,
-            O.chain(isStr(FuncName))
-          )
-        )
-        .bindL(
-          "moduleName",
-          flow(
-            access("ni"),
-            extractModuleNameFromNamedImports,
-            O.chain(isStr(ModuleName))
-          )
-        )
-        .bindL(
-          "type",
-          flow(
-            access("ce"),
-            access("typeArguments"),
-            O.fromNullable,
-            O.map(args => args[0]),
-            O.chain(O.fromNullable),
-            O.map(checker.getTypeFromTypeNode)
-          )
-        )
-        .return(({ ce, ni, type, functionName, moduleName }) => {
-          console.log("found!");
-          console.log("  call expression:", ce.getText());
-          console.log("  function name  :", functionName);
-          console.log("  module name    :", moduleName);
-
-          console.log("  extracted type :", type.symbol.escapedName);
-          return type;
-        })
-    )
-  );
-
-const extractType = (
-  t: ts.Symbol
-): D.Derivate<O.Option<[ts.Symbol, ts.Type]>> => {
-  console.log("%%%% looking at:", t.getName());
-  return D.of(O.none);
-};
-
-const symbolRepresentsTcForType = (
-  symbol: ts.Symbol,
-  type: ts.Type
-): D.Derivate<boolean> => {
-  console.log("%%%% looking at:", symbol.getName());
-  console.log("%%%% does it represent: ", type.symbol.getName(), "?");
-  return D.of(false);
-};
+// const extractType = (
+//   t: ts.Symbol
+// ): D.Derivate<O.Option<[ts.Symbol, ts.Type]>> => {
+//   console.log("%%%% looking at:", t.getName());
+//   return D.of(O.none);
+// };
 
 const searchScope = (
-  rootLocation: ts.Node
+  rootLocation: ts.Node,
+  deriver: Deriver
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
   D.askM(({ checker }) =>
     pipe(
@@ -159,7 +89,9 @@ const searchScope = (
       symbols =>
         A.array.traverse(D.derivate)(symbols, symbol =>
           pipe(
-            symbolRepresentsTcForType(symbol, t),
+            deriver.symbolRepresentsTcForType
+              ? deriver.symbolRepresentsTcForType(symbol, t)
+              : D.of(false),
             D.map(isGood => (isGood ? O.some(symbol) : O.none))
           )
         ),
@@ -236,11 +168,10 @@ const addResolvedExpression = (
  * @param t
  */
 const query = (
-  rootLocation: ts.Node
-):((
-  t: ts.Type
-) => D.Derivate<O.Option<ts.Expression>>) =>
-  t => Do(D.derivate)
+  rootLocation: ts.Node,
+  deriver: Deriver
+): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
+  Do(D.derivate)
     .sequenceS({
       resolved: findInResolved(t),
       queried: hasBeenQueried(t)
@@ -249,7 +180,7 @@ const query = (
     .bindL("ret", ({ resolved, queried }) =>
       queried ? D.error(D.recursive(t)) : D.of(resolved)
     )
-    .bind("search", searchScope(rootLocation)(t))
+    .bind("search", searchScope(rootLocation, deriver)(t))
     .doL(
       flow(
         access("search"),
@@ -265,33 +196,45 @@ export function testTransformer<T extends ts.Node>(
   checker: ts.TypeChecker,
   program: ts.Program,
   source: ts.SourceFile,
-  expressionBuilder: ExpressionBuilder
+  deriver: Deriver
 ): ts.TransformerFactory<T> {
-
   return context => {
     const visit: ts.Visitor = node => {
-
-      const buildExpressionInner = (t: ts.Type, queried: ts.Type[], path: D.PathContext): (D.Derivate<ts.Expression>) =>
+      const buildExpressionInner = (
+        t: ts.Type,
+        queried: ts.Type[],
+        path: D.PathContext
+      ): D.Derivate<ts.Expression> =>
         pipe(
           queried,
           A.findFirst(q => typeEq(checker).equals(q, t)),
           O.fold(
-            () => 
-            Do(D.derivate)
-              .bind('query', query(node)(t))
-              .bindL('expression', flow(
-                access('query'),
-                O.map(D.of),
-                O.getOrElse(() =>
-                  expressionBuilder(t, (nextType, step) => buildExpressionInner(nextType, [...queried, t], [...path, step]))
+            () =>
+              Do(D.derivate)
+                .bind("query", query(node, deriver)(t))
+                .bindL(
+                  "expression",
+                  flow(
+                    access("query"),
+                    O.map(D.of),
+                    O.getOrElse(() =>
+                      deriver.expressionBuilder(t, (nextType, step) =>
+                        buildExpressionInner(
+                          nextType,
+                          [...queried, t],
+                          [...path, step]
+                        )
+                      )
+                    )
+                  )
                 )
-              )).return(access('expression')),
+                .return(access("expression")),
             t => D.error(D.recursive(t))
           )
-        )
+        );
 
       const programD = Do(D.derivate)
-        .bind("type", myExtractor(node))
+        .bind("type", deriver.extractor(node))
         .bindL("expression", ({ type }) =>
           pipe(
             type,
