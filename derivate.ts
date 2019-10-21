@@ -30,19 +30,32 @@ export type DerivateState = {
   queries: TypeQueryContext
 }
 
+export type ContextStep = ADT<{
+  prop: { name: string },
+  intersection: { before: ts.Type, after: ts.Type },
+  union: { before: ts.Type, after: ts.Type },
+}>
+
+export type PathContext = ContextStep[];
+
 export type DerivateError = ADT<{
-  Exception: {message: string},
+  Exception: { message: string },
   UnsupportedType: { type: ts.Type, label: string },
-  InvalidProp: { name: string, pos: {line: number, char: number} }
+  InvalidProp: { name: string, pos: {line: number, char: number} },
+  UnableToFind: { type: ts.Type, path: PathContext },
+  RecursiveTypeDetected: { type: ts.Type }
 }>
 
 export const printError = (e: DerivateError): string => 
   match(e)({
     Exception: e => `Whoops, ${e.message}`,
     UnsupportedType: e => `The type ${red(e.label)} isn't supported for derivation.`,
-    InvalidProp: e => `The property ${red(e.name)} found didn't work out.`
+    InvalidProp: e => `The property ${red(e.name)} found didn't work out.`,
+    UnableToFind: e => 'hmm!',
+    RecursiveTypeDetected: e => 'recursive type! zomg'
   })
 
+export const recursive = (type: ts.Type): DerivateError => ({_type: 'RecursiveTypeDetected', type})
 export const exception = (message: string): DerivateError => ({ _type: 'Exception', message })
 export const unsupportedType = (type: ts.Type, label: string): DerivateError => ({ _type: 'UnsupportedType', type, label})
 
@@ -139,6 +152,12 @@ export const ask = <A>(f: (c: Context) => A): Derivate<A> =>
   pipe(
     R.ask<Context>(),
     R.map(c => S.of(E.right(f(c))))
+  )
+
+export const askM = <A>(f: (c: Context) => Derivate<A>): Derivate<A> => 
+  pipe(
+    R.ask<Context>(),
+    R.chain(c => f(c))
   )
 
 // type OptionHandler = <A>(o: Option<A>) => Derivate<A>

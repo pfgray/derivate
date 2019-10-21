@@ -10,6 +10,8 @@ import { User } from './User';
     t.partial({age: t.number})
   ])
 
+  d.encode({name: 'tester', age: 10})
+
   t.boolean
 }
 
@@ -31,4 +33,3 @@ const c = t.type({
   a.decode({name: 'Paul', age: 4}),
   a.decode({name: 'Paul'}),
 ].map(h => console.log(h))
-
