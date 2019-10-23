@@ -148,6 +148,12 @@ export const modify = (f: (s: DerivateState) => DerivateState): Derivate<Derivat
 //     )
 //   )
 
+export const askC: Derivate<Context> = 
+  pipe(
+    R.ask<Context>(),
+    R.map(c => S.of(E.right(c)))
+  )
+
 export const ask = <A>(f: (c: Context) => A): Derivate<A> => 
   pipe(
     R.ask<Context>(),

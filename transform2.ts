@@ -1,3 +1,4 @@
+import { access } from './utils';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as D from "./derivate";
 import * as ts from "typescript";
@@ -27,18 +28,6 @@ const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 
 export type Extractor = (node: ts.Node) => D.Derivate<O.Option<ts.Type>>;
 
-type Access<O, K> = K extends keyof O ? O[K] : never;
-
-export const access = <K extends string>(
-  key: K
-): (<O extends object>(o: O) => Access<O, K>) => o => (o as any)[key];
-
-const tap = <A>(f: (a: A) => void): ((a: A) => A) => a => {
-  f(a);
-  return a;
-};
-
-const log = (s: string): (<A>(a: A) => A) => tap(a => console.log(s, a));
 
 /**
  * Get the _real_ (or, 'original') name of the first named import
@@ -56,19 +45,6 @@ export const extractNameFromNamedImports = (
         O.getOrElse(() => el.name.text)
       )
     )
-  );
-
-export const extract = <A extends ts.Node>(
-  f: (u: ts.Node) => u is A
-): ((n: ts.Node) => O.Option<A>) => u => (f(u) ? O.some(u) : O.none);
-
-export const extractModuleNameFromNamedImports = (
-  ni: ts.NamedImports
-): O.Option<string> =>
-  pipe(
-    ni.parent.parent.moduleSpecifier,
-    extract(ts.isStringLiteral),
-    O.map(access("text"))
   );
 
 // const extractType = (
@@ -248,7 +224,7 @@ export function testTransformer<T extends ts.Node>(
         checker,
         program,
         source,
-        deriveNode: null as any
+        deriveNode: node
       })({ queries: { queried: [], resolved: [] } });
 
       if (E.isLeft(result)) {
