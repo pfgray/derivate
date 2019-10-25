@@ -1,7 +1,8 @@
 
-export interface User {
+export type User = {
   name: string,
   age?: number,
+  // friend: User,
   // img: Image,
   // lastLogin: Date,
   // created: Date

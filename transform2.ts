@@ -1,4 +1,4 @@
-import { access } from './utils';
+import { access, typeEq, isTypeAssignableTo, logIt, logWith } from './utils';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as D from "./derivate";
 import * as ts from "typescript";
@@ -154,7 +154,8 @@ const query = (
     })
     .do(D.modify(queriedL.modify(q => [...q, { type: t }])))
     .bindL("ret", ({ resolved, queried }) =>
-      queried ? D.error(D.recursive(t)) : D.of(resolved)
+      // queried ? (() => {console.log('WUUUUT'); return D.error(D.recursive(t))})() : D.of(resolved)
+      D.of(resolved)
     )
     .bind("search", searchScope(rootLocation, deriver)(t))
     .doL(
@@ -166,7 +167,12 @@ const query = (
         )
       )
     )
-    .return(c => c.ret);
+    .return(c =>
+      pipe(
+        c.search,
+        O.alt(() => c.ret)
+      )
+    );
 
 export function testTransformer<T extends ts.Node>(
   checker: ts.TypeChecker,
@@ -190,9 +196,12 @@ export function testTransformer<T extends ts.Node>(
                 .bind("query", query(node, deriver)(t))
                 .bindL(
                   "expression",
-                  flow(
-                    access("query"),
+                  ({query}) =>
+                  pipe(
+                    query,
                     O.map(D.of),
+                    // todo: is this defined here?!?!??!?
+                    logWith('expr is:', e => e),
                     O.getOrElse(() =>
                       deriver.expressionBuilder(t, (nextType, step) =>
                         buildExpressionInner(
@@ -214,7 +223,7 @@ export function testTransformer<T extends ts.Node>(
         .bindL("expression", ({ type }) =>
           pipe(
             type,
-            O.map(type => buildExpressionInner(type, [], [])),
+            O.map(t => buildExpressionInner(t, [], [])),
             O.option.sequence(D.derivate)
           )
         )
@@ -228,7 +237,12 @@ export function testTransformer<T extends ts.Node>(
       })({ queries: { queried: [], resolved: [] } });
 
       if (E.isLeft(result)) {
-        console.error("erroar");
+        console.error("erroar", result.left);
+        result.left.forEach(err => {
+          if(err._type === 'RecursiveTypeDetected') {
+            console.log('Recursive type detected: ', err.type.symbol.name)
+          }
+        })
         return ts.visitEachChild(node, child => visit(child), context);
       } else if (O.isSome(result.right)) {
         return result.right.value;
@@ -240,18 +254,6 @@ export function testTransformer<T extends ts.Node>(
     return node => ts.visitNode(node, visit);
   };
 }
-
-function isTypeAssignableTo(
-  checker: ts.TypeChecker,
-  source: ts.Type,
-  target: ts.Type
-): boolean {
-  return (checker as any).isTypeAssignableTo(source, target);
-}
-
-const typeEq = (ch: ts.TypeChecker): Eq<ts.Type> => ({
-  equals: (a, b) => isTypeAssignableTo(ch, a, b) && isTypeAssignableTo(ch, b, a)
-});
 
 function printType(ts: ts.Type): string {
   if (ts.symbol) {

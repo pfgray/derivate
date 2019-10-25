@@ -7,6 +7,8 @@ import { flow, identity } from 'fp-ts/lib/function';
 import { homedir } from 'os';
 import { sequenceT, sequenceS } from 'fp-ts/lib/Apply';
 import { extractNameFromNamedImports } from './transform2';
+import { syntaxKindtoName } from './syntaxKind';
+import { Eq } from 'fp-ts/lib/Eq';
 
 export const isStr = <K extends string>(k: K): ((s: string) => O.Option<K>) => s =>
   s === k ? O.some(s as K) : O.none;
@@ -87,6 +89,19 @@ export const extractModuleNameFromNamedImports = (
     extract(ts.isStringLiteral),
     O.map(access("text"))
   );
+
+
+export function isTypeAssignableTo(
+  checker: ts.TypeChecker,
+  source: ts.Type,
+  target: ts.Type
+): boolean {
+  return (checker as any).isTypeAssignableTo(source, target);
+}
+
+export const typeEq = (ch: ts.TypeChecker): Eq<ts.Type> => ({
+  equals: (a, b) => isTypeAssignableTo(ch, a, b) && isTypeAssignableTo(ch, b, a)
+});
 
 type Access<O, K> = K extends keyof O ? O[K] : never;
 

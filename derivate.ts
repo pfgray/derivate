@@ -32,8 +32,9 @@ export type DerivateState = {
 
 export type ContextStep = ADT<{
   prop: { name: string },
-  intersection: { before: ts.Type, after: ts.Type },
-  union: { before: ts.Type, after: ts.Type },
+  intersection: { before: ts.Type[], after: ts.Type[] },
+  union: { before: ts.Type[], after: ts.Type[] },
+  lazy: {} //  todo: remove O_O
 }>
 
 export type PathContext = ContextStep[];
