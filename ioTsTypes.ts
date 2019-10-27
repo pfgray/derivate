@@ -95,7 +95,7 @@ export function print(outer: IoType, indentSize: number = 2): string {
   return inner(0, outer);
 }
 
-const indentTo = (n: number, s: string): string => {
+export const indentTo = (n: number, s: string): string => {
   let str = '';
   for(var i = 0; i < n; i++) { str = str + ' ' }
   return str + s;

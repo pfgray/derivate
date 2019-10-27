@@ -8,6 +8,5 @@ import { Type } from 'io-ts';
    */
   // const userC: Type<User> = null as any;
 
-
-  yo<{name: string, age: number, user: User}>()
+  yo<string | User>()
 }

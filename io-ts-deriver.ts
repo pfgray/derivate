@@ -12,6 +12,7 @@ import * as E from 'fp-ts/lib/Either';
 import { typeFlagToName } from './syntaxKind';
 import { match } from './adt';
 import { matchType, propFold } from './helpers';
+import { splay } from './hood';
 
 const JSDocTagName = "implied";
 const FuncName = "__derive";
@@ -48,12 +49,14 @@ const expressionBuilder = (
     booleanLiteral: bool => callT('literal')(ts.createLiteral(bool.value)),
     boolean: () => accessT('boolean'),
     union: u => pipe(
-      array.traverse(D.derivate)(u.types, t => advance(t, {_type: 'lazy'})),
+      splay(u.types),
+      hoods => array.traverse(D.derivate)(hoods, hood => advance(hood.focus, {_type: 'union', before: hood.left, after: hood.right, type: hood.focus})),
       D.map(ts.createArrayLiteral),
       D.chain(callT('union'))
     ),
     intersection: i => pipe(
-      array.traverse(D.derivate)(i.types, t => advance(t, {_type: 'lazy'})),
+      splay(i.types),
+      hoods => array.traverse(D.derivate)(hoods, hood => advance(hood.focus, {_type: 'intersection', before: hood.left, after: hood.right, type: hood.focus})),
       D.map(ts.createArrayLiteral),
       D.chain(callT('union'))
     ),
@@ -63,9 +66,9 @@ const expressionBuilder = (
     // generic: { type: ts.Type, parameters: ts.Type[] },
     function: () => accessT('Function'),
     struct: ({extract}) =>
-      D.askM(({checker}) => 
+      D.askM(({checker, source}) => 
         pipe(
-          extract(checker),
+          extract(checker, source),
           ({props}) => array.traverse(D.derivate)(props, propFold({
             method: (name) => pipe(
               accessT('function'),
@@ -75,7 +78,7 @@ const expressionBuilder = (
               console.log('advancing from: ', type.getProperties().map(a => a.name), 'to', type.getProperties().map(a => a.name));
                return pipe(
               
-              advance(t, {_type: 'prop', name }),
+              advance(t, {_type: 'prop', name, type: t }),
               D.map(acc => ts.createPropertyAssignment(name, acc))
             ) }
           })),
@@ -165,9 +168,9 @@ export const IoTsDeriver: Deriver = {
             )
           )
           .return(({ ce, type }) => {
-            console.log("found!");
-            console.log("  call expression:", ce.getText());
-            console.log("  extracted type :", type.symbol.escapedName);
+            // console.log("found!");
+            // console.log("  call expression:", ce.getText());
+            // console.log("  extracted type :", type.symbol.escapedName);
             return type;
           })
       )

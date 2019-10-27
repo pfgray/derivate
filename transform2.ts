@@ -1,23 +1,19 @@
+import { indentTo } from './ioTsTypes';
 import { access, typeEq, isTypeAssignableTo, logIt, logWith } from './utils';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as D from "./derivate";
 import * as ts from "typescript";
 import {
-  nodeFlagToName,
   typeFlagToName,
-  syntaxKindtoName,
-  symbolFlagToName
 } from "./syntaxKind";
 import * as O from "fp-ts/lib/Option";
 import * as E from "fp-ts/lib/Either";
 import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/pipeable";
 import { flow, identity } from "fp-ts/lib/function";
-import { fromNullable } from "fp-ts/lib/Either";
-import { Type } from "io-ts";
-import { Eq } from "fp-ts/lib/Eq";
 import { Lens } from "monocle-ts";
 import { Deriver } from "./deriver";
+import { Type } from 'io-ts';
 
 type ExpressionBuilder = (
   type: ts.Type,
@@ -214,7 +210,7 @@ export function testTransformer<T extends ts.Node>(
                   )
                 )
                 .return(access("expression")),
-            t => D.error(D.recursive(t))
+            t => D.error(D.recursive(t, path))
           )
         );
 
@@ -237,10 +233,31 @@ export function testTransformer<T extends ts.Node>(
       })({ queries: { queried: [], resolved: [] } });
 
       if (E.isLeft(result)) {
-        console.error("erroar", result.left);
+        // console.error("erroar", result.left);
+        const printer = ts.createPrinter({
+          newLine: ts.NewLineKind.LineFeed
+        });
+
+        const foo: ts.TypeNode = null as any;
+
+        const bar: ts.Type = null as any;
+
+        // bar.getProperties()[0].declarations
+        
         result.left.forEach(err => {
           if(err._type === 'RecursiveTypeDetected') {
             console.log('Recursive type detected: ', err.type.symbol.name)
+            err.path.map((path, i) => {
+              if(path._type === "prop") {
+                return indentTo(i + 1, `└─ ${path.name}`)
+              } else if(path._type === 'intersection') {
+                return indentTo(i + 1, `└─ ${path.type.symbol.name}`)
+              } else if(path._type === 'union') {
+                return indentTo(i + 1, `└─ ${path.type.symbol.name}`) // .symbol.name}`)
+              } else {
+                return indentTo(i + 1, `└─ lazy!`)
+              }
+            }).forEach(a => console.log(a))
           }
         })
         return ts.visitEachChild(node, child => visit(child), context);

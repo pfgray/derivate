@@ -2,7 +2,7 @@
 export type User = {
   name: string,
   age?: number,
-  // friend: User,
+  friend: User,
   // img: Image,
   // lastLogin: Date,
   // created: Date

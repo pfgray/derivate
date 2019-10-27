@@ -27,7 +27,7 @@ type MatchTypes = {
   function: { arguments: ts.Type[]; returnType: ts.Type };
 
   // todo: this is just, ugh... 
-  struct: { extract: (checker: ts.TypeChecker) => ({ props: Property[] }) };
+  struct: { extract: (checker: ts.TypeChecker, source: ts.SourceFile) => ({ props: Property[] }) };
 
   default: undefined;
 };
@@ -62,6 +62,9 @@ type Matchers<Z> = { [K in keyof MatchTypes]: (arg: MatchTypes[K]) => Z };
 //   return matchers
 // }
 
+const tap = <A>(f: (a:A) => void): ((a: A) => A) =>
+  a => { f(a); return a };
+
 export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
   if (t.isStringLiteral()) {
     return m.stringLiteral(t);
@@ -94,7 +97,7 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
   } else {
     // TODO: this is kinda whack and needs some review, is there a better way?
     // defaulting to struct
-    return m.struct({ extract: (checker) => ({
+    return m.struct({ extract: (checker, source) => ({
       props: pipe(
         t.getProperties(),
         A.chain<ts.Symbol, Property>(prop => {
@@ -109,6 +112,13 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
             return pipe(
               dec.type,
               O.fromNullable,
+              O.map(tap(a => {
+                const printer = ts.createPrinter({
+                  newLine: ts.NewLineKind.LineFeed
+                });
+                console.log('Got typenode!!!')
+                console.log(printer.printNode(ts.EmitHint.Unspecified, a, source))
+              })),
               O.map(checker.getTypeFromTypeNode),
               O.map(typ => property(dec.name.getText(), typ)),
               toArray
