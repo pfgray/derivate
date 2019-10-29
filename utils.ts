@@ -1,14 +1,10 @@
-import { Do } from 'fp-ts-contrib/lib/Do';
-import * as ts from "typescript";
-import * as O from "fp-ts/lib/Option";
+import { sequenceS } from 'fp-ts/lib/Apply';
 import * as A from "fp-ts/lib/Array";
-import { pipe } from "fp-ts/lib/pipeable";
-import { flow, identity } from 'fp-ts/lib/function';
-import { homedir } from 'os';
-import { sequenceT, sequenceS } from 'fp-ts/lib/Apply';
-import { extractNameFromNamedImports } from './transform2';
-import { syntaxKindtoName } from './syntaxKind';
 import { Eq } from 'fp-ts/lib/Eq';
+import { flow, identity } from 'fp-ts/lib/function';
+import * as O from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/pipeable";
+import * as ts from "typescript";
 
 export const isStr = <K extends string>(k: K): ((s: string) => O.Option<K>) => s =>
   s === k ? O.some(s as K) : O.none;

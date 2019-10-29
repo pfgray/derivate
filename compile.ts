@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { testTransformer } from './transform2';
+import { testTransformer } from './transform';
 import { IoTsDeriver } from './io-ts-deriver';
 
 const program = ts.createProgram(['./src/main/ts/simple.ts'], {});
