@@ -26,3 +26,10 @@ export enum Console {
   BgCyan = "\x1b[46m",
   BgWhite = "\x1b[47m",
 }
+
+export const wrap = (c: Console) => (s: string) => c + s + Console.Reset
+export const cyan = wrap(Console.FgCyan)
+export const dim = wrap(Console.Dim)
+export const red = (s: string) => bright(wrap(Console.FgRed)(s))
+export const yellah = wrap(Console.FgYellow)
+export const bright = wrap(Console.Bright)

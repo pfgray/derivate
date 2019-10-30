@@ -4,7 +4,11 @@ import { Type } from 'io-ts';
 
 {
   const userC: Type<User> = null as any;
-  
+  __derive<User>()
+}
+
+{
+  const dateC: Type<Date> = null as any;
   __derive<User>()
 }
 

@@ -2,7 +2,10 @@
 export type User = {
   name: string,
   age?: number,
-  img: Image
+  friend: User,
+  // img: Image,
+  // lastLogin: Date,
+  // created: Date
 }
 
 export type Image = {
