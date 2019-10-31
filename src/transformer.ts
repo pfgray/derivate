@@ -1,5 +1,5 @@
-import { Hood } from './hood';
-import { access, typeEq, isTypeAssignableTo, logIt, logWith } from './utils';
+import { Hood } from './utils/hood';
+import { access, typeEq, isTypeAssignableTo, logIt, logWith } from './utils/compilerUtils';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as D from "./derivate";
 import * as ts from "typescript";
@@ -10,8 +10,8 @@ import { pipe } from "fp-ts/lib/pipeable";
 import { flow, identity } from "fp-ts/lib/function";
 import { Lens } from "monocle-ts";
 import { Deriver } from "./deriver";
-import { printType } from './helpers';
-import { dim, red } from './console';
+import { printType } from './utils/helpers';
+import { dim, red } from './utils/console';
 
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);

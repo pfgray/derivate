@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
-import { testTransformer } from './transform';
-import { IoTsDeriver } from './io-ts-deriver';
+import { testTransformer } from '../src/transformer';
+import { IoTsDeriver } from '../src/derivers/io-ts-type/io-ts-deriver';
 
 const program = ts.createProgram(['./src/main/ts/simple.ts'], {});
 const checker = program.getTypeChecker();

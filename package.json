@@ -1,5 +1,5 @@
 {
-  "name":"calculus",
+  "name":"derivate",
   "version": "0.1.0",
   "license": "MIT",
   "dependencies": {
@@ -10,5 +10,9 @@
     "monocle-ts": "^2.0.0",
     "tsutils": "^3.17.1",
     "typescript": "3.7.0-dev.20191013"
+  },
+  "main": "./lib/transformer.js",
+  "scripts": {
+    "typecheck": "tsc"
   }
 }

@@ -5,15 +5,15 @@ import { flow } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
 import * as ts from "typescript";
-import * as D from "./derivate";
-import { Deriver } from "./deriver";
-import { matchType, propFold } from "./helpers";
-import { splay } from "./hood";
-import { access, extract, symbolMatches, typeEq } from "./utils";
+import * as D from "../../derivate";
+import { Deriver } from "../../deriver";
+import { matchType, propFold } from "../../utils/helpers";
+import { splay } from "../../utils/hood";
+import { access, extract, symbolMatches, typeEq } from "../../utils/compilerUtils";
 
 const JSDocTagName = "implied";
 const FuncName = "__derive";
-const ModuleName = "./derive";
+const ModuleName = "derivate/lib/io-ts-type";
 
 const accessT = (s: string): D.Derivate<ts.PropertyAccessExpression> =>
   D.of(

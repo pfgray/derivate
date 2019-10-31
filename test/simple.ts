@@ -1,4 +1,4 @@
-import { __derive as yo } from './derive';
+import { __derive as yo } from '../src/io-ts-type';
 import { User } from './User';
 import { Type } from 'io-ts';
 

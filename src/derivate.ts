@@ -1,4 +1,4 @@
-import { Hood } from './hood';
+import { Hood } from './utils/hood';
 import { Do } from 'fp-ts-contrib/lib/Do';
 import * as E from 'fp-ts/lib/Either';
 import { Monad1 } from 'fp-ts/lib/Monad';
@@ -11,8 +11,8 @@ import * as ts from 'typescript';
 import State = S.State;
 import Reader = R.Reader;
 import { Option, isNone } from 'fp-ts/lib/Option';
-import { ADT, match } from './adt';
-import { red, dim } from './console';
+import { ADT, match } from './utils/adt';
+import { red, dim } from './utils/console';
 import { identity } from 'fp-ts/lib/function';
 
 export type TypeQueryResult = ADT<{

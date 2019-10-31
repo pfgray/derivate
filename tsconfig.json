@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./lib",
+    "rootDir": "./src",
     "declaration": true,
     "target": "es5",
     "module": "commonjs",
@@ -13,5 +14,5 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"]
   },
-  "include": ["./**/*"]
+  "include": ["./src/**/*"]
 }

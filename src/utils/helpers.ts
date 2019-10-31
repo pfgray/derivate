@@ -1,9 +1,8 @@
-import { prop } from "./ioTsTypes";
 import * as ts from "typescript";
 import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
 import { pipe } from "fp-ts/lib/pipeable";
-import { toArray, access } from "./utils";
+import { toArray, access } from "./compilerUtils";
 import { ADT, match } from "./adt";
 import { symbolFlagToName, typeFlagToName } from "./syntaxKind";
 import { checkServerIdentity } from "tls";
