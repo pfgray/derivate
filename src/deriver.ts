@@ -12,7 +12,8 @@ export type Deriver = {
    */
   expressionBuilder(
     type: ts.Type,
-    advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>
+    advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
+    currentPath: D.PathContext,
   ): D.Derivate<ts.Expression>,
 
   /**

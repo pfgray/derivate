@@ -30,7 +30,8 @@ const callT = (
 
 const expressionBuilder = (
   type: ts.Type,
-  advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>
+  advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
+  currentPath: D.PathContext,
 ): D.Derivate<ts.Expression> => {
   return matchType<D.Derivate<ts.Expression>>({
     stringLiteral: str => callT("literal")(ts.createStringLiteral(str.value)),
@@ -70,17 +71,17 @@ const expressionBuilder = (
       ),
 
     class: t =>
-      D.error({
-        _type: "UnsupportedType",
-        type: t.type,
-        label: "classes ain't supported"
-      }),
+      D.error(D.unsupportedType(
+        t.type,
+        "classes ain't supported",
+        currentPath
+      )),
     interface: t =>
-      D.error({
-        _type: "UnsupportedType",
-        type: t.type,
-        label: "interfaces ain't supported"
-      }),
+      D.error(D.unsupportedType(
+        t.type,
+        "interfaces ain't supported",
+        currentPath
+      )),
     // todo: hmm
     // generic: { type: ts.Type, parameters: ts.Type[] },
     function: () => accessT("Function"),

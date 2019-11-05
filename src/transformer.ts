@@ -1,18 +1,17 @@
-import { Hood } from './utils/hood';
-import { access, typeEq, isTypeAssignableTo, logIt, logWith } from './utils/compilerUtils';
 import { Do } from "fp-ts-contrib/lib/Do";
-import * as D from "./derivate";
-import * as ts from "typescript";
-import * as O from "fp-ts/lib/Option";
-import * as E from "fp-ts/lib/Either";
 import * as A from "fp-ts/lib/Array";
+import * as E from "fp-ts/lib/Either";
+import { flow } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
-import { flow, identity } from "fp-ts/lib/function";
 import { Lens } from "monocle-ts";
+import * as ts from "typescript";
+import * as D from "./derivate";
 import { Deriver } from "./deriver";
-import { printType } from './utils/helpers';
-import { dim, red } from './utils/console';
-
+import { access, isTypeAssignableTo, typeEq } from "./utils/compilerUtils";
+import { dim, red } from "./utils/console";
+import { printType } from "./utils/helpers";
+import { Hood } from "./utils/hood";
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 
@@ -53,13 +52,13 @@ const searchScope = (
             D.map(isGood => (isGood ? O.some(symbol) : O.none))
           )
         ),
-      D.map(
-        flow(
-          A.chain(a => toArray(a)),
-          A.head,
-          O.map(symbol => ts.createIdentifier(symbol.getName()))
+        D.map(
+          flow(
+            A.chain(a => toArray(a)),
+            A.head,
+            O.map(symbol => ts.createIdentifier(symbol.getName()))
+          )
         )
-      )
     )
   );
 
@@ -97,18 +96,18 @@ const findInResolved = (t: ts.Type): D.Derivate<O.Option<ts.Expression>> =>
     )
   );
 
-const hasBeenQueried = (t: ts.Type): D.Derivate<boolean> =>
-  pipe(
-    D.get,
-    D.map(
-      flow(
-        access("queries"),
-        access("queried")
-      )
-    ),
-    D.chain(findType(t)),
-    D.map(O.isSome)
-  );
+// const hasBeenQueried = (t: ts.Type): D.Derivate<boolean> =>
+//   pipe(
+//     D.get,
+//     D.map(
+//       flow(
+//         access("queries"),
+//         access("queried")
+//       )
+//     ),
+//     D.chain(findType(t)),
+//     D.map(O.isSome)
+//   );
 
 const queriedL = Lens.fromPath<D.DerivateState>()(["queries", "queried"]);
 const resolvedL = Lens.fromPath<D.DerivateState>()(["queries", "resolved"]);
@@ -131,13 +130,11 @@ const query = (
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
   Do(D.derivate)
     .sequenceS({
-      resolved: findInResolved(t),
+      resolved: findInResolved(t)
       // queried: hasBeenQueried(t) todo: not sure I need this
     })
     .do(D.modify(queriedL.modify(q => [...q, { type: t }])))
-    .bindL("ret", ({ resolved }) =>
-      D.of(resolved)
-    )
+    .bindL("ret", ({ resolved }) => D.of(resolved))
     .bind("search", searchScope(rootLocation, deriver)(t))
     .doL(
       flow(
@@ -156,106 +153,130 @@ const query = (
       )
     );
 
-export function testTransformer<T extends ts.Node>(
-  checker: ts.TypeChecker,
-  program: ts.Program,
-  source: ts.SourceFile,
+export function makeTransformer(
   deriver: Deriver
-): ts.TransformerFactory<T> {
-  return context => {
-    const visit: ts.Visitor = node => {
-      const buildExpressionInner = (
-        t: ts.Type,
-        queried: ts.Type[],
-        path: D.PathContext
-      ): D.Derivate<ts.Expression> =>
-        pipe(
-          queried,
-          A.findFirst(q => typeEq(checker).equals(q, t)),
-          O.fold(
-            () =>
-              Do(D.derivate)
-                .bind("query", query(node, deriver)(t))
-                .bindL(
-                  "expression",
-                  ({query}) =>
-                  pipe(
-                    query,
-                    O.map(D.of),
-                    O.getOrElse(() =>
-                      deriver.expressionBuilder(t, (nextType, step) =>
-                        buildExpressionInner(
-                          nextType,
-                          [...queried, t],
-                          [...path, step]
-                        )
+): <T extends ts.Node>(program: ts.Program) => ts.TransformerFactory<T> {
+  return program => {
+    return context => {
+      const checker = program.getTypeChecker();
+      const visit: ts.Visitor = node => {
+        const source = node.getSourceFile();
+        const buildExpressionInner = (
+          t: ts.Type,
+          queried: ts.Type[],
+          path: D.PathContext
+        ): D.Derivate<ts.Expression> =>
+          pipe(
+            queried,
+            A.findFirst(q => typeEq(checker).equals(q, t)),
+            O.fold(
+              () =>
+                Do(D.derivate)
+                  .bind("query", query(node, deriver)(t))
+                  .bindL("expression", ({ query }) =>
+                    pipe(
+                      query,
+                      O.map(D.of),
+                      O.getOrElse(() =>
+                        deriver.expressionBuilder(t, (nextType, step) =>
+                          buildExpressionInner(
+                            nextType,
+                            [...queried, t],
+                            [...path, step]
+                          )
+                        , path)
                       )
                     )
                   )
-                )
-                .return(access("expression")),
-            t => D.error(D.recursive(t, path))
+                  .return(access("expression")),
+              t => D.error(D.recursive(t, path))
+            )
+          );
+
+        const programD = Do(D.derivate)
+          .bind("type", deriver.extractor(node))
+          .bindL("expression", ({ type }) =>
+            pipe(
+              type,
+              O.map(t => buildExpressionInner(t, [], [])),
+              O.option.sequence(D.derivate)
+            )
           )
-        );
+          .return(access("expression"));
 
-      const programD = Do(D.derivate)
-        .bind("type", deriver.extractor(node))
-        .bindL("expression", ({ type }) =>
-          pipe(
-            type,
-            O.map(t => buildExpressionInner(t, [], [])),
-            O.option.sequence(D.derivate)
-          )
-        )
-        .return(access("expression"));
+        const [result] = programD({
+          checker,
+          program,
+          source: node.getSourceFile(),
+          deriveNode: node
+        })({ queries: { queried: [], resolved: [] } });
 
-      const [result] = programD({
-        checker,
-        program,
-        source,
-        deriveNode: node
-      })({ queries: { queried: [], resolved: [] } });
+        if (E.isLeft(result)) {
+          let errMessage: string = "";
+          result.left.forEach(err => {
+            const pr = (t: ts.Type) => printType(checker, source)(t);
+            if (err._type === "RecursiveTypeDetected") {
+              errMessage += "Recursive type detected:\n";
+              errMessage += printPath(pr, err.path)
+            } else if (err._type === "UnsupportedType") {
+              errMessage +=
+                "Unsupported type: " + pr(err.type) + ` (${err.label})\n`;
+              errMessage += printPath(pr,err.path)
+            }
+          });
+          console.log('Built Error message: ', errMessage)
+          throw new Error('Transformation failed');
+        } else if (O.isSome(result.right)) {
+          return result.right.value;
+        } else {
+          return ts.visitEachChild(node, child => visit(child), context);
+        }
+      };
 
-      if (E.isLeft(result)) {
-        let errMessage: string = '';
-        result.left.forEach(err => {
-          const pr = (t: ts.Type) => printType(checker, source)(t)
-          if(err._type === 'RecursiveTypeDetected') {
-            errMessage += 'Recursive type detected:\n';
-            err.path.map((path, i) => {
-              if(path._type === "prop") {
-                return indentTo(i + 1, `└─ ${red(path.name)}: ${dim(pr(path.type))}`)
-              } else if(path._type === 'intersection') {
-                return indentTo(i + 1, `└─ ${printHood('|', pr)(path.hood)}`)
-              } else if(path._type === 'union') {
-                return indentTo(i + 1, `└─ ${printHood('|', pr)(path.hood)}`)
-              }
-            }).forEach(a => errMessage += `${a}\n`)
-          } else if(err._type === 'UnsupportedType') {
-            errMessage += 'Unsupported type: ' + pr(err.type) + ` (${err.label})`
-          }
-        });
-        throw new Error(errMessage)
-      } else if (O.isSome(result.right)) {
-        return result.right.value;
-      } else {
-        return ts.visitEachChild(node, child => visit(child), context);
-      }
+      return node => ts.visitNode(node, visit);
     };
-
-    return node => ts.visitNode(node, visit);
   };
 }
 
-export const printHood = (separator: string, print: (t: ts.Type) => string): ((h: Hood<ts.Type>) => string) =>
-  h => (
-    (h.left.length > 0 ? dim(h.left.map(print).join(` ${separator} `) + ` ${separator} `) : '') +
-    red(print(h.focus)) +
-    (h.right.length > 0 ? dim(` ${separator} ` + h.right.map(print).join(` ${separator} `)) : '')
-  )
+const printPath = (pr: (t: ts.Type) => string, path?: D.PathContext,): string => {
+  return path ? path
+    .map((path, i) => {
+      if (path._type === "prop") {
+        return indentTo(
+          i + 1,
+          `└─ ${red(path.name)}: ${dim(pr(path.type))}`
+        );
+      } else if (path._type === "intersection") {
+        return indentTo(
+          i + 1,
+          `└─ ${printHood("|", pr)(path.hood)}`
+        );
+      } else if (path._type === "union") {
+        return indentTo(
+          i + 1,
+          `└─ ${printHood("|", pr)(path.hood)}`
+        );
+      }
+    }).join('\n') : '';
+}
+  
+
+export const printHood = (
+  separator: string,
+  print: (t: ts.Type) => string
+): ((h: Hood<ts.Type>) => string) => h =>
+  (h.left.length > 0
+    ? dim(h.left.map(print).join(` ${separator} `) + ` ${separator} `)
+    : "") +
+  red(print(h.focus)) +
+  (h.right.length > 0
+    ? dim(` ${separator} ` + h.right.map(print).join(` ${separator} `))
+    : "");
 
 export const indentTo = (n: number, s: string): string => {
-  let str = '';
-  for(var i = 0; i < n; i++) { str = str + ' ' }
+  let str = "";
+  for (var i = 0; i < n; i++) {
+    str = str + " ";
+  }
   return str + s;
-}
+};

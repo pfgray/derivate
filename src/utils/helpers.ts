@@ -1,15 +1,11 @@
-import * as ts from "typescript";
-import * as O from "fp-ts/lib/Option";
 import * as A from "fp-ts/lib/Array";
-import { pipe } from "fp-ts/lib/pipeable";
-import { toArray, access } from "./compilerUtils";
-import { ADT, match } from "./adt";
-import { symbolFlagToName, typeFlagToName } from "./syntaxKind";
-import { checkServerIdentity } from "tls";
 import { flow, identity } from "fp-ts/lib/function";
-import { Type } from "io-ts";
-import { homedir, type } from "os";
-import { isTypeFlagSet } from 'tsutils'
+import * as O from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/pipeable";
+import { isTypeFlagSet } from 'tsutils';
+import * as ts from "typescript";
+import { ADT } from "./adt";
+import { access, toArray } from "./compilerUtils";
 
 type MatchTypes = {
   stringLiteral: { value: string };
@@ -77,10 +73,10 @@ type Matchers<Z> = { [K in keyof MatchTypes]: (arg: MatchTypes[K]) => Z };
 //   return matchers
 // }
 
-const tap = <A>(f: (a: A) => void): ((a: A) => A) => a => {
-  f(a);
-  return a;
-};
+// const _tap = <A>(f: (a: A) => void): ((a: A) => A) => a => {
+//   f(a);
+//   return a;
+// };
 
 export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
   if (t.isStringLiteral()) {
@@ -117,7 +113,7 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
     // TODO: this is kinda whack and needs some review, is there a better way?
     // defaulting to struct
     return m.struct({
-      extract: (checker, source) => ({
+      extract: (checker) => ({
         props: pipe(
           t.getProperties(),
           A.chain<ts.Symbol, Property>(prop => {

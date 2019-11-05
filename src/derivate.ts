@@ -40,11 +40,11 @@ export type ContextStep = ADT<{
 export type PathContext = ContextStep[];
 
 export type DerivateError = ADT<{
-  Exception: { message: string },
-  UnsupportedType: { type: ts.Type, label: string },
-  InvalidProp: { name: string, pos: {line: number, char: number}, path: PathContext },
-  UnableToFind: { type: ts.Type, path: PathContext },
-  RecursiveTypeDetected: { type: ts.Type, path: PathContext }
+  Exception: { message: string, path?: PathContext },
+  UnsupportedType: { type: ts.Type, label: string, path?: PathContext },
+  InvalidProp: { name: string, pos: {line: number, char: number}, path?: PathContext },
+  UnableToFind: { type: ts.Type, path?: PathContext },
+  RecursiveTypeDetected: { type: ts.Type, path?: PathContext }
 }>
 
 export const printError = (e: DerivateError): string => 
@@ -56,19 +56,19 @@ export const printError = (e: DerivateError): string =>
     RecursiveTypeDetected: e => 'recursive type!\n' + printPathContext(e.path)
   })
 
-export const printPathContext = (p: PathContext): string => {
+export const printPathContext = (p?: PathContext): string => {
   // const inner = (indent: number): string =>
   
-  return p.map(path => match(path)({
+  return p? p.map(path => match(path)({
     prop: a => `${red(a.name)}`,
     intersection: i => `${i.hood.left.map(b => dim(b.symbol.getName())).join(' & ')} & ${i.hood.focus.symbol.getName()} & ${i.hood.right.map(b => dim(b.symbol.getName())).join(' & ')}`,
     union: i => `${i.hood.left.map(b => dim(b.symbol.getName())).join(' | ')} | ${i.hood.focus.symbol.getName()} | ${i.hood.right.map(b => dim(b.symbol.getName())).join(' | ')}`,
-  })).join('\n')
+  })).join('\n') : ''
 }
 
 export const recursive = (type: ts.Type, path: PathContext): DerivateError => ({_type: 'RecursiveTypeDetected', type, path})
 export const exception = (message: string): DerivateError => ({ _type: 'Exception', message })
-export const unsupportedType = (type: ts.Type, label: string): DerivateError => ({ _type: 'UnsupportedType', type, label})
+export const unsupportedType = (type: ts.Type, label: string, path?: PathContext): DerivateError => ({ _type: 'UnsupportedType', type, label, path})
 
 export type Context = {
   checker: ts.TypeChecker,
