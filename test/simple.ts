@@ -1,5 +1,4 @@
 import { __derive as yo } from '../src/io-ts-type';
-import { User } from './User';
 import { Type } from 'io-ts';
 
 type Aardvark = { hmm: Date };
@@ -8,13 +7,14 @@ type Aardvark = { hmm: Date };
   /**
    * @implied
    */
-  const userC: Type<User> = null as any;
+  const dateC: Type<Date> = null as any;
 
-  type Wut = {
-    a: string,
+  type User = {
+    username: string,
+    lastLoginTime: Date,
     b: number,
-    c: Aardvark | User | number | string
+    c: Aardvark | number | string
   }
 
-  yo<Wut>()
+  const userCodec = yo<User>()
 }

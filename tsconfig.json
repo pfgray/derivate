@@ -8,7 +8,7 @@
     "moduleResolution": "node",
     "strict": true,
     "noImplicitReturns": false,
-    "noUnusedLocals": true,
+    // "noUnusedLocals": true,
     // "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,

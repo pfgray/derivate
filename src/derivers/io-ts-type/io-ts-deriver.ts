@@ -1,3 +1,5 @@
+import { logWith, log } from './../../utils/compilerUtils';
+import { Import } from './../../utils/import';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as A from "fp-ts/lib/Array";
 import { array } from "fp-ts/lib/Array";
@@ -9,115 +11,117 @@ import * as D from "../../derivate";
 import { Deriver } from "../../deriver";
 import { matchType, propFold } from "../../utils/helpers";
 import { splay } from "../../utils/hood";
-import { access, extract, symbolMatches, typeEq } from "../../utils/compilerUtils";
+import { access, extract, symbolMatches, typeEq, logIt } from "../../utils/compilerUtils";
 
 const JSDocTagName = "implied";
 const FuncName = "__derive";
-const ModuleName = "derivate/lib/io-ts-type";
+// const ModuleName = "derivate/lib/io-ts-type";
+// const ModuleName = "../src/io-ts-type";
 
-const accessT = (s: string): D.Derivate<ts.PropertyAccessExpression> =>
+const accessT = (tImport: string, s: string): D.Derivate<ts.PropertyAccessExpression> =>
   D.of(
-    ts.createPropertyAccess(ts.createIdentifier("t"), ts.createIdentifier(s))
+    ts.createPropertyAccess(ts.createIdentifier(tImport), ts.createIdentifier(s))
   );
 
 const callT = (
+  tImport: string,
   s: string
 ): ((...args: ts.Expression[]) => D.Derivate<ts.CallExpression>) => (...args) =>
   pipe(
-    accessT(s),
+    accessT(tImport, s),
     D.map(str => ts.createCall(str, undefined, args))
   );
 
-const expressionBuilder = (
-  type: ts.Type,
-  advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
-  currentPath: D.PathContext,
-): D.Derivate<ts.Expression> => {
-  return matchType<D.Derivate<ts.Expression>>({
-    stringLiteral: str => callT("literal")(ts.createStringLiteral(str.value)),
-    string: () => accessT("string"),
-    numberLiteral: num => callT("literal")(ts.createLiteral(num.value)),
-    number: () => accessT("number"),
-    void: () => accessT("void"),
-    unknown: () => accessT("unknown"),
-    any: () => accessT("any"),
-    booleanLiteral: bool => callT("literal")(ts.createLiteral(bool.value)),
-    boolean: () => accessT("boolean"),
-    union: u =>
-      pipe(
-        splay(u.types),
-        hoods =>
-          array.traverse(D.derivate)(hoods, hood =>
-            advance(hood.focus, {
-              _type: "union",
-              hood
-            })
-          ),
-        D.map(ts.createArrayLiteral),
-        D.chain(callT("union"))
-      ),
-    intersection: i =>
-      pipe(
-        splay(i.types),
-        hoods =>
-          array.traverse(D.derivate)(hoods, hood =>
-            advance(hood.focus, {
-              _type: "intersection",
-              hood
-            })
-          ),
-        D.map(ts.createArrayLiteral),
-        D.chain(callT("union"))
-      ),
-
-    class: t =>
-      D.error(D.unsupportedType(
-        t.type,
-        "classes ain't supported",
-        currentPath
-      )),
-    interface: t =>
-      D.error(D.unsupportedType(
-        t.type,
-        "interfaces ain't supported",
-        currentPath
-      )),
-    // todo: hmm
-    // generic: { type: ts.Type, parameters: ts.Type[] },
-    function: () => accessT("Function"),
-    struct: ({ extract }) =>
-      D.askM(({ checker, source }) =>
+export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Deriver<[Import]> => ({
+  addImport: () => [{_type: 'star', name: 't', module: 'io-ts'}], // import * as t from 'io-ts'
+  expressionBuilder: (
+    type: ts.Type,
+    advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
+    currentPath: D.PathContext,
+    [tImport]
+  ) => {
+    return matchType<D.Derivate<ts.Expression>>({
+      stringLiteral: str => callT(tImport, "literal")(ts.createStringLiteral(str.value)),
+      string: () => accessT(tImport, "string"),
+      numberLiteral: num => callT(tImport, "literal")(ts.createLiteral(num.value)),
+      number: () => accessT(tImport, "number"),
+      void: () => accessT(tImport, "void"),
+      unknown: () => accessT(tImport, "unknown"),
+      any: () => accessT(tImport, "any"),
+      booleanLiteral: bool => callT(tImport, "literal")(ts.createLiteral(bool.value)),
+      boolean: () => accessT(tImport, "boolean"),
+      union: u =>
         pipe(
-          extract(checker, source),
-          ({ props }) =>
-            array.traverse(D.derivate)(
-              props,
-              propFold({
-                method: name =>
-                  pipe(
-                    accessT("function"),
-                    D.map(acc => ts.createPropertyAssignment(name, acc))
-                  ),
-                property: (name, t) => {
-                  return pipe(
-                    advance(t, { _type: "prop", name, type: t }),
-                    D.map(acc => ts.createPropertyAssignment(name, acc))
-                  );
-                }
+          splay(u.types),
+          hoods =>
+            array.traverse(D.derivate)(hoods, hood =>
+              advance(hood.focus, {
+                _type: "union",
+                hood
               })
             ),
-          D.map(ts.createObjectLiteral),
-          D.chain(callT("struct"))
-        )
-      ),
-
-    default: () =>
-      D.error({ _type: "Exception", message: 'sent to "default" matcher' })
-  })(type);
-};
-
-export const IoTsDeriver: Deriver = {
-  expressionBuilder,
+          D.map(ts.createArrayLiteral),
+          D.chain(callT(tImport, "union"))
+        ),
+      intersection: i =>
+        pipe(
+          splay(i.types),
+          hoods =>
+            array.traverse(D.derivate)(hoods, hood =>
+              advance(hood.focus, {
+                _type: "intersection",
+                hood
+              })
+            ),
+          D.map(ts.createArrayLiteral),
+          D.chain(callT(tImport, "union"))
+        ),
+  
+      class: t =>
+        D.error(D.unsupportedType(
+          t.type,
+          "classes ain't supported",
+          currentPath
+        )),
+      interface: t =>
+        D.error(D.unsupportedType(
+          t.type,
+          "interfaces ain't supported",
+          currentPath
+        )),
+      // todo: hmm
+      // generic: { type: ts.Type, parameters: ts.Type[] },
+      function: () => accessT(tImport, "Function"),
+      struct: ({ extract }) =>
+        D.askM(({ checker, source }) =>
+          pipe(
+            extract(checker, source),
+            ({ props }) =>
+              array.traverse(D.derivate)(
+                props,
+                propFold({
+                  method: name =>
+                    pipe(
+                      accessT(tImport, "function"),
+                      D.map(acc => ts.createPropertyAssignment(name, acc))
+                    ),
+                  property: (name, t) => {
+                    return pipe(
+                      advance(t, { _type: "prop", name, type: t }),
+                      D.map(acc => ts.createPropertyAssignment(name, acc))
+                    );
+                  }
+                })
+              ),
+            D.map(ts.createObjectLiteral),
+            D.chain(callT(tImport, "struct"))
+          )
+        ),
+  
+      default: () =>
+        D.error({ _type: "Exception", message: 'sent to "default" matcher' })
+    })(type);
+  },
   symbolRepresentsTcForType: (symbol, type) =>
     Do(D.derivate)
       .bind("checker", D.ask(a => a.checker))
@@ -174,7 +178,7 @@ export const IoTsDeriver: Deriver = {
       D.deriver,
       D.map(({ context: { checker } }) =>
         Do(O.option)
-          .bind("ce", extract(ts.isCallExpression)(node))
+          .bind("ce", extract(ts.isCallExpression)(node)) 
           .bindL(
             "matches",
             flow(
@@ -182,7 +186,8 @@ export const IoTsDeriver: Deriver = {
               access("expression"),
               checker.getSymbolAtLocation,
               O.fromNullable,
-              O.map(symbolMatches(FuncName, ModuleName)),
+              logWith('##checking call expr', s => moduleName),
+              O.map(symbolMatches(FuncName, moduleName)),
               O.chain(matches => (matches ? O.some(matches) : O.none))
             )
           )
@@ -205,4 +210,4 @@ export const IoTsDeriver: Deriver = {
           })
       )
     )
-};
+});

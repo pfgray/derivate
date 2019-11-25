@@ -2,13 +2,13 @@ import * as ts from 'typescript';
 import { makeTransformer } from '../src/transformer';
 import { IoTsDeriver } from '../src/derivers/io-ts-type/io-ts-deriver';
 
-const program = ts.createProgram(['./src/main/ts/simple.ts'], {});
-const source = program.getSourceFile('./src/main/ts/simple.ts');
+const program = ts.createProgram(['./test/simple.ts'], {});
+const source = program.getSourceFile('./test/simple.ts');
 
 if(source) {
 
   const result = ts.transform(source, [
-    makeTransformer(IoTsDeriver)(program)
+    makeTransformer(IoTsDeriver("../src/io-ts-type"))(program)
   ])
 
   console.log('/** Transforming: **/');

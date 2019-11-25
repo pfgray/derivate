@@ -12,6 +12,7 @@ import { access, isTypeAssignableTo, typeEq } from "./utils/compilerUtils";
 import { dim, red } from "./utils/console";
 import { printType } from "./utils/helpers";
 import { Hood } from "./utils/hood";
+import { addImports, Import } from "./utils/import";
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 
@@ -153,18 +154,39 @@ const query = (
       )
     );
 
+let importedFiles: string[] = []
+
 export function makeTransformer(
   deriver: Deriver
 ): <T extends ts.Node>(program: ts.Program) => ts.TransformerFactory<T> {
+  // dunno a way to avoid this mutated state...
+  // let importedFiles: string[] = []
+  let ids: string[]
   return program => {
     return context => {
       const checker = program.getTypeChecker();
       const visit: ts.Visitor = node => {
+        console.log('wtf')
+        if(ts.isSourceFile(node) && !importedFiles.includes(node.fileName)) {
+
+        console.log('wtf more')
+          // todo: how to not import this in every file?
+          // We need a way to determine if we will have any substitutions...
+          const imports: Import[] = ('addImport' in deriver) ? deriver.addImport() : []
+          
+          // Mutations!
+          const [computedIds, newFile] = addImports(imports)(node)
+          console.log('Adding import: ', computedIds)
+          ids = computedIds;
+          importedFiles = [...importedFiles, node.fileName];
+          return visit(newFile);
+        }
         const source = node.getSourceFile();
         const buildExpressionInner = (
           t: ts.Type,
           queried: ts.Type[],
-          path: D.PathContext
+          path: D.PathContext,
+          imports: string[]
         ): D.Derivate<ts.Expression> =>
           pipe(
             queried,
@@ -182,9 +204,10 @@ export function makeTransformer(
                           buildExpressionInner(
                             nextType,
                             [...queried, t],
-                            [...path, step]
+                            [...path, step],
+                            imports
                           )
-                        , path)
+                        , path, imports)
                       )
                     )
                   )
@@ -193,15 +216,18 @@ export function makeTransformer(
             )
           );
 
+          console.log('Checking expression!!!')
+
         const programD = Do(D.derivate)
           .bind("type", deriver.extractor(node))
-          .bindL("expression", ({ type }) =>
-            pipe(
+          .bindL("expression", ({ type }) => {
+            console.log('Now building expression!', type)
+            return pipe(
               type,
-              O.map(t => buildExpressionInner(t, [], [])),
+              O.map(t => buildExpressionInner(t, [], [], ids)),
               O.option.sequence(D.derivate)
             )
-          )
+          })
           .return(access("expression"));
 
         const [result] = programD({
@@ -224,8 +250,8 @@ export function makeTransformer(
               errMessage += printPath(pr,err.path)
             }
           });
-          console.log('Built Error message: ', errMessage)
-          throw new Error('Transformation failed');
+          // console.log(errMessage)
+          throw new Error(errMessage);
         } else if (O.isSome(result.right)) {
           return result.right.value;
         } else {
@@ -259,7 +285,6 @@ const printPath = (pr: (t: ts.Type) => string, path?: D.PathContext,): string =>
       }
     }).join('\n') : '';
 }
-  
 
 export const printHood = (
   separator: string,
