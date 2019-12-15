@@ -166,27 +166,12 @@ export function makeTransformer(
     return context => {
       const checker = program.getTypeChecker();
       const visit: ts.Visitor = node => {
-        console.log('wtf')
-        if(ts.isSourceFile(node) && !importedFiles.includes(node.fileName)) {
-
-        console.log('wtf more')
-          // todo: how to not import this in every file?
-          // We need a way to determine if we will have any substitutions...
-          const imports: Import[] = ('addImport' in deriver) ? deriver.addImport() : []
-          
-          // Mutations!
-          const [computedIds, newFile] = addImports(imports)(node)
-          console.log('Adding import: ', computedIds)
-          ids = computedIds;
-          importedFiles = [...importedFiles, node.fileName];
-          return visit(newFile);
-        }
         const source = node.getSourceFile();
         const buildExpressionInner = (
           t: ts.Type,
+          id: ts.Identifier,
           queried: ts.Type[],
-          path: D.PathContext,
-          imports: string[]
+          path: D.PathContext
         ): D.Derivate<ts.Expression> =>
           pipe(
             queried,
@@ -198,16 +183,16 @@ export function makeTransformer(
                   .bindL("expression", ({ query }) =>
                     pipe(
                       query,
-                      O.map(D.of),
+                      O.map(h => D.of(h)),
                       O.getOrElse(() =>
-                        deriver.expressionBuilder(t, (nextType, step) =>
+                        deriver.expressionBuilder(t, id, (nextType, step) =>
                           buildExpressionInner(
                             nextType,
+                            id,
                             [...queried, t],
-                            [...path, step],
-                            imports
+                            [...path, step]
                           )
-                        , path, imports)
+                        , path)
                       )
                     )
                   )
@@ -216,15 +201,15 @@ export function makeTransformer(
             )
           );
 
-          console.log('Checking expression!!!')
+        console.log('Checking expression!!!')
 
         const programD = Do(D.derivate)
           .bind("type", deriver.extractor(node))
           .bindL("expression", ({ type }) => {
-            console.log('Now building expression!', type)
+            // console.log('Now building expression!', type)
             return pipe(
               type,
-              O.map(t => buildExpressionInner(t, [], [], ids)),
+              O.map(t => buildExpressionInner(t[0], t[1], [], [])),
               O.option.sequence(D.derivate)
             )
           })

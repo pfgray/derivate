@@ -12,44 +12,50 @@ import { Deriver } from "../../deriver";
 import { matchType, propFold } from "../../utils/helpers";
 import { splay } from "../../utils/hood";
 import { access, extract, symbolMatches, typeEq, logIt } from "../../utils/compilerUtils";
+import { syntaxKindtoName } from '../../utils/syntaxKind';
 
 const JSDocTagName = "implied";
 const FuncName = "__derive";
 // const ModuleName = "derivate/lib/io-ts-type";
 // const ModuleName = "../src/io-ts-type";
 
-const accessT = (tImport: string, s: string): D.Derivate<ts.PropertyAccessExpression> =>
+const accessT = (importId: ts.Identifier, s: string): D.Derivate<ts.PropertyAccessExpression> =>
   D.of(
-    ts.createPropertyAccess(ts.createIdentifier(tImport), ts.createIdentifier(s))
+    ts.createPropertyAccess(
+      ts.createPropertyAccess(
+        importId,
+        ts.createIdentifier(tImport))
+      , ts.createIdentifier(s))
   );
 
 const callT = (
-  tImport: string,
+  importId: ts.Identifier,
   s: string
 ): ((...args: ts.Expression[]) => D.Derivate<ts.CallExpression>) => (...args) =>
   pipe(
-    accessT(tImport, s),
+    accessT(importId, s),
     D.map(str => ts.createCall(str, undefined, args))
   );
 
-export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Deriver<[Import]> => ({
-  addImport: () => [{_type: 'star', name: 't', module: 'io-ts'}], // import * as t from 'io-ts'
+const tImport = "t";
+
+export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Deriver => ({
   expressionBuilder: (
     type: ts.Type,
+    id: ts.Identifier,
     advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
     currentPath: D.PathContext,
-    [tImport]
   ) => {
     return matchType<D.Derivate<ts.Expression>>({
-      stringLiteral: str => callT(tImport, "literal")(ts.createStringLiteral(str.value)),
-      string: () => accessT(tImport, "string"),
-      numberLiteral: num => callT(tImport, "literal")(ts.createLiteral(num.value)),
-      number: () => accessT(tImport, "number"),
-      void: () => accessT(tImport, "void"),
-      unknown: () => accessT(tImport, "unknown"),
-      any: () => accessT(tImport, "any"),
-      booleanLiteral: bool => callT(tImport, "literal")(ts.createLiteral(bool.value)),
-      boolean: () => accessT(tImport, "boolean"),
+      stringLiteral: str => callT(id, "literal")(ts.createStringLiteral(str.value)),
+      string: () => accessT(id, "string"),
+      numberLiteral: num => callT(id, "literal")(ts.createLiteral(num.value)),
+      number: () => accessT(id, "number"),
+      void: () => accessT(id, "void"),
+      unknown: () => accessT(id, "unknown"),
+      any: () => accessT(id, "any"),
+      booleanLiteral: bool => callT(id, "literal")(ts.createLiteral(bool.value)),
+      boolean: () => accessT(id, "boolean"),
       union: u =>
         pipe(
           splay(u.types),
@@ -61,7 +67,7 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
               })
             ),
           D.map(ts.createArrayLiteral),
-          D.chain(callT(tImport, "union"))
+          D.chain(callT(id, "union"))
         ),
       intersection: i =>
         pipe(
@@ -74,7 +80,7 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
               })
             ),
           D.map(ts.createArrayLiteral),
-          D.chain(callT(tImport, "union"))
+          D.chain(callT(id, "union"))
         ),
   
       class: t =>
@@ -91,7 +97,7 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
         )),
       // todo: hmm
       // generic: { type: ts.Type, parameters: ts.Type[] },
-      function: () => accessT(tImport, "Function"),
+      function: () => accessT(id, "Function"),
       struct: ({ extract }) =>
         D.askM(({ checker, source }) =>
           pipe(
@@ -102,7 +108,7 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
                 propFold({
                   method: name =>
                     pipe(
-                      accessT(tImport, "function"),
+                      accessT(id, "function"),
                       D.map(acc => ts.createPropertyAssignment(name, acc))
                     ),
                   property: (name, t) => {
@@ -114,7 +120,7 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
                 })
               ),
             D.map(ts.createObjectLiteral),
-            D.chain(callT(tImport, "struct"))
+            D.chain(callT(id, "struct"))
           )
         ),
   
@@ -203,10 +209,16 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
             )
           )
           .return(({ ce, type }) => {
-            // console.log("found!");
-            // console.log("  call expression:", ce.getText());
-            // console.log("  extracted type :", type.symbol.escapedName);
-            return type;
+            
+            console.log("found!");
+            console.log("  call expression:", ce.getText());
+            
+            console.log('  children:');
+            ce.getChildren().forEach(n => {
+              console.log('      :', syntaxKindtoName(n.kind), `(${n.getText()})`)
+            })
+            console.log("  extracted type :", type.symbol.escapedName);
+            return [type, ce.getChildren()[0] as ts.Identifier]; // todo: not this
           })
       )
     )
