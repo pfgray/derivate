@@ -1,4 +1,4 @@
-import { Hood } from './hood';
+import { Hood } from './utils/hood';
 import { Do } from 'fp-ts-contrib/lib/Do';
 import * as E from 'fp-ts/lib/Either';
 import { Monad1 } from 'fp-ts/lib/Monad';
@@ -11,8 +11,8 @@ import * as ts from 'typescript';
 import State = S.State;
 import Reader = R.Reader;
 import { Option, isNone } from 'fp-ts/lib/Option';
-import { ADT, match } from './adt';
-import { red, dim } from './console';
+import { ADT, match, matchI } from 'ts-adt';
+import { red, dim } from './utils/console';
 import { identity } from 'fp-ts/lib/function';
 
 export type TypeQueryResult = ADT<{
@@ -40,15 +40,15 @@ export type ContextStep = ADT<{
 export type PathContext = ContextStep[];
 
 export type DerivateError = ADT<{
-  Exception: { message: string },
-  UnsupportedType: { type: ts.Type, label: string },
-  InvalidProp: { name: string, pos: {line: number, char: number}, path: PathContext },
-  UnableToFind: { type: ts.Type, path: PathContext },
-  RecursiveTypeDetected: { type: ts.Type, path: PathContext }
+  Exception: { message: string, path?: PathContext },
+  UnsupportedType: { type: ts.Type, label: string, path?: PathContext },
+  InvalidProp: { name: string, pos: {line: number, char: number}, path?: PathContext },
+  UnableToFind: { type: ts.Type, path?: PathContext },
+  RecursiveTypeDetected: { type: ts.Type, path?: PathContext }
 }>
 
 export const printError = (e: DerivateError): string => 
-  match(e)({
+  matchI(e)({
     Exception: e => `Whoops, ${e.message}`,
     UnsupportedType: e => `The type ${red(e.label)} isn't supported for derivation.`,
     InvalidProp: e => `The property ${red(e.name)} found didn't work out.`,
@@ -56,19 +56,19 @@ export const printError = (e: DerivateError): string =>
     RecursiveTypeDetected: e => 'recursive type!\n' + printPathContext(e.path)
   })
 
-export const printPathContext = (p: PathContext): string => {
+export const printPathContext = (p?: PathContext): string => {
   // const inner = (indent: number): string =>
   
-  return p.map(path => match(path)({
+  return p? p.map(match({
     prop: a => `${red(a.name)}`,
     intersection: i => `${i.hood.left.map(b => dim(b.symbol.getName())).join(' & ')} & ${i.hood.focus.symbol.getName()} & ${i.hood.right.map(b => dim(b.symbol.getName())).join(' & ')}`,
     union: i => `${i.hood.left.map(b => dim(b.symbol.getName())).join(' | ')} | ${i.hood.focus.symbol.getName()} | ${i.hood.right.map(b => dim(b.symbol.getName())).join(' | ')}`,
-  })).join('\n')
+  })).join('\n') : ''
 }
 
 export const recursive = (type: ts.Type, path: PathContext): DerivateError => ({_type: 'RecursiveTypeDetected', type, path})
 export const exception = (message: string): DerivateError => ({ _type: 'Exception', message })
-export const unsupportedType = (type: ts.Type, label: string): DerivateError => ({ _type: 'UnsupportedType', type, label})
+export const unsupportedType = (type: ts.Type, label: string, path?: PathContext): DerivateError => ({ _type: 'UnsupportedType', type, label, path})
 
 export type Context = {
   checker: ts.TypeChecker,

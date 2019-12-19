@@ -1,16 +1,14 @@
 import * as ts from 'typescript';
-import { testTransformer } from './transform';
-import { IoTsDeriver } from './io-ts-deriver';
+import { makeTransformer } from '@derivate/core/transformer';
+import { IoTsDeriver } from '@derivate/io-ts-deriver/io-ts-deriver';
 
-const program = ts.createProgram(['./src/main/ts/simple.ts'], {});
-const checker = program.getTypeChecker();
-const source = program.getSourceFile('./src/main/ts/simple.ts');
-const printer = ts.createPrinter();
+const program = ts.createProgram(['./test/simple.ts'], {});
+const source = program.getSourceFile('./test/simple.ts');
 
 if(source) {
 
   const result = ts.transform(source, [
-    testTransformer(checker, program, source, IoTsDeriver)
+    makeTransformer(IoTsDeriver("../src/io-ts-type"))(program)
   ])
 
   console.log('/** Transforming: **/');

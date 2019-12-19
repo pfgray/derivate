@@ -36,7 +36,9 @@ export const symbolMatches = (name: string, moduleName: string): ((s: ts.Symbol)
             mn: extractModuleNameFromNamedImports(ni),
             id: getOriginalNameFromNamedImports(s, ni)
           }),
-          O.map(({mn, id}) => mn === moduleName && id === name),
+          O.map(({mn, id}) => {
+            return mn === moduleName && id === name
+          }),
           toArray
         )
       ),
