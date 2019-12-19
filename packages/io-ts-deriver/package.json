@@ -1,0 +1,14 @@
+{
+  "name": "@derivate/io-ts-deriver",
+  "version": "0.1.0",
+  "main": "lib/io-ts-deriver.js",
+  "typings": "lib/deriver.ts",
+  "license": "MIT",
+  "dependencies": {
+    "@derivate/core": "0.1.0",
+    "io-ts": "^2.0.1"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}

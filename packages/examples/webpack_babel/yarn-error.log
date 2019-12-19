@@ -1,0 +1,65 @@
+Arguments: 
+  /home/paul/.nvm/versions/node/v11.15.0/bin/node /usr/share/yarn/bin/yarn.js build
+
+PATH: 
+  /home/paul/.nvm/versions/node/v11.15.0/bin:/home/paul/apps/node-v10.14.1-linux-x64/bin:/home/paul/apps/maven/apache-maven-3.6.1/bin:/home/paul/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+
+Yarn version: 
+  1.12.3
+
+Node version: 
+  11.15.0
+
+Platform: 
+  linux x64
+
+Trace: 
+  SyntaxError: /home/paul/dev/derivate/packages/examples/webpack_babel/package.json: Unexpected token } in JSON at position 828
+      at JSON.parse (<anonymous>)
+      at /usr/share/yarn/lib/cli.js:1631:59
+      at Generator.next (<anonymous>)
+      at step (/usr/share/yarn/lib/cli.js:304:30)
+      at /usr/share/yarn/lib/cli.js:315:13
+
+npm manifest: 
+  {
+    "name": "webpack_babel-example",
+    "version": "0.1.0",
+    "main": "index.js",
+    "license": "MIT",
+    "dependencies": {
+      "@babel/core": "^7.6.4",
+      "@babel/preset-env": "^7.6.3",
+      "@babel/preset-react": "^7.6.3",
+      "@babel/preset-typescript": "^7.6.0",
+      "babel-loader": "^8.0.6",
+      "cli-highlight": "^2.1.4",
+      "fp-ts": "^2.1.2",
+      "io-ts": "^2.0.1",
+      "loader-utils": "^1.2.3",
+      "ts-loader": "^6.2.1",
+      "webpack": "^4.41.2",
+      "webpack-cli": "^3.3.10",
+      "@derivate/io-ts-deriver": "0.1.0"
+    },
+    "scripts": {
+      "build": "webpack",
+      "compile": "ts-node ./compile.ts"
+    },
+    "browserslist": "> 0.25%, not dead",
+    "babel": {
+      "presets": [
+        ["@babel/preset-env",{
+          "targets": "> 0.25%, not dead"
+        }],
+        "@babel/preset-react",
+        "@babel/preset-typescript"
+      ],
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

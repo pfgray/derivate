@@ -4,7 +4,7 @@ import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
 import { isTypeFlagSet } from 'tsutils';
 import * as ts from "typescript";
-import { ADT } from "./adt";
+import { ADT } from "ts-adt";
 import { access, toArray } from "./compilerUtils";
 
 type MatchTypes = {

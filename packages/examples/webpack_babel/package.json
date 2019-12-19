@@ -1,0 +1,35 @@
+{
+  "name": "webpack_babel-example",
+  "version": "0.1.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.6.4",
+    "@babel/preset-env": "^7.6.3",
+    "@babel/preset-react": "^7.6.3",
+    "@babel/preset-typescript": "^7.6.0",
+    "babel-loader": "^8.0.6",
+    "cli-highlight": "^2.1.4",
+    "fp-ts": "^2.1.2",
+    "io-ts": "^2.0.1",
+    "loader-utils": "^1.2.3",
+    "ts-loader": "^6.2.1",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10",
+    "@derivate/io-ts-deriver": "0.1.0"
+  },
+  "scripts": {
+    "build": "webpack",
+    "compile": "ts-node ./compile.ts"
+  },
+  "browserslist": "> 0.25%, not dead",
+  "babel": {
+    "presets": [
+      ["@babel/preset-env",{
+        "targets": "> 0.25%, not dead"
+      }],
+      "@babel/preset-react",
+      "@babel/preset-typescript"
+    ]
+  }
+}

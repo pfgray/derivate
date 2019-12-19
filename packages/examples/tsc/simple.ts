@@ -1,4 +1,4 @@
-import { __deriveIO } from '../src/io-ts-type';
+import { __deriveIO } from '@derivate/io-ts-deriver/io-ts-type';
 import { Type } from 'io-ts';
 
 type Aardvark = { hmm: Date };

@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import { state, State } from "fp-ts/lib/State";
 import { array } from "fp-ts/lib/Array";
-import { ADT } from "./adt";
+import { ADT } from "ts-adt";
 
 /** Represents a namespace import, i.e.  'import * as'  */
 export type Import = ADT<{

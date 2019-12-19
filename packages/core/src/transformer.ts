@@ -12,7 +12,7 @@ import { access, isTypeAssignableTo, typeEq } from "./utils/compilerUtils";
 import { dim, red } from "./utils/console";
 import { printType } from "./utils/helpers";
 import { Hood } from "./utils/hood";
-import { addImports, Import } from "./utils/import";
+
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 

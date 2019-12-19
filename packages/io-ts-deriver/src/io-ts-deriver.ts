@@ -1,4 +1,3 @@
-import { Import } from './../../utils/import';
 import { Do } from "fp-ts-contrib/lib/Do";
 import * as A from "fp-ts/lib/Array";
 import { array } from "fp-ts/lib/Array";
@@ -6,13 +5,12 @@ import { flow } from "fp-ts/lib/function";
 import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
 import * as ts from "typescript";
-import * as D from "../../derivate";
-import { Deriver } from "../../deriver";
-import { matchType, propFold } from "../../utils/helpers";
-import { splay } from "../../utils/hood";
-import { logWith, log, access, extract, symbolMatches, typeEq, logIt } from "../../utils/compilerUtils";
-import { syntaxKindtoName } from '../../utils/syntaxKind';
-import { map } from 'fp-ts/lib/State';
+import * as D from "@derivate/core/lib/derivate";
+import { Deriver } from "@derivate/core/lib/deriver";
+import { matchType, propFold } from "@derivate/core/lib/utils/helpers";
+import { splay } from "@derivate/core/lib/utils/hood";
+import { logWith, log, access, extract, symbolMatches, typeEq, logIt } from "@derivate/core/lib/utils/compilerUtils";
+import { syntaxKindtoName } from '@derivate/core/lib/utils/syntaxKind';
 
 const JSDocTagName = "implied";
 const FuncName = "__deriveIO";
@@ -39,7 +37,7 @@ const callT = (
 
 const tImport = "t";
 
-export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Deriver<ts.Identifier> => ({
+export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io-ts-type"): Deriver<ts.Identifier> => ({
   expressionBuilder: (
     type: ts.Type,
     id: ts.Identifier,
@@ -187,8 +185,6 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
           .bind("ce", extract(ts.isCallExpression)(node))
           // .bindL("ceName", ({ce}) => extract(ts.isIdentifier)(ce.expression))
           .bindL("propAccess", ({ce}) => {
-            console.log('Attempting to get prop Access!', ce.getText())
-            console.log('Attempting to get prop Access!', syntaxKindtoName(ce.expression.kind))
             return extract(ts.isPropertyAccessExpression)(ce.expression)
           })
           .bindL("leftExpression", ({propAccess}) => extract(ts.isIdentifier)(propAccess.expression))
@@ -196,7 +192,6 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
             "identifier", ({propAccess, leftExpression}) => {
               return pipe(
                 O.fromNullable(checker.getSymbolAtLocation(leftExpression)),
-                logWith('##checking call expr', s => (s as O.Some<ts.Symbol>).value.name ),
                 O.map(symbolMatches(FuncName, moduleName)),
                 O.chain(matches => (matches && propAccess.name.text === 'derive' ? O.some(leftExpression) : O.none))
               )
@@ -215,14 +210,14 @@ export const IoTsDeriver = (moduleName: string = "derivate/lib/io-ts-type"): Der
           )
           .return(({ ce, identifier, type }) => {
             
-            console.log("found!");
-            console.log("  call expression:", ce.getText());
+            // console.log("found!");
+            // console.log("  call expression:", ce.getText());
             
-            console.log('  children:');
-            ce.getChildren().forEach(n => {
-              console.log('      :', syntaxKindtoName(n.kind), `(${n.getText()})`)
-            })
-            console.log("  extracted type :", type.symbol.escapedName);
+            // console.log('  children:');
+            // ce.getChildren().forEach(n => {
+            //   console.log('      :', syntaxKindtoName(n.kind), `(${n.getText()})`)
+            // })
+            // console.log("  extracted type :", type.symbol.escapedName);
             return [type, identifier];
           })
       )
