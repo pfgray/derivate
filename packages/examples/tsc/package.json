@@ -1,12 +1,12 @@
 {
   "name": "@derivate/example-tsc",
-  "version": "0.1.0",
+  "version": "0.1.1-alpha.0",
   "main": "index.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@derivate/core": "^0.1.0",
-    "@derivate/io-ts-deriver": "^0.1.0",
+    "@derivate/core": "^0.1.1-alpha.0",
+    "@derivate/io-ts-deriver": "^0.1.1-alpha.0",
     "@types/node": "^9.4.7"
   }
 }
