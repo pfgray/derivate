@@ -1,4 +1,4 @@
-import { __derive as yo } from '../src/io-ts-type';
+import { __deriveIO } from '../src/io-ts-type';
 import { Type } from 'io-ts';
 
 type Aardvark = { hmm: Date };
@@ -16,5 +16,5 @@ type Aardvark = { hmm: Date };
     c: Aardvark | number | string
   }
 
-  const userCodec = yo<User>()
+  const userCodec = __deriveIO.derive<User>()
 }

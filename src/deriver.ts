@@ -2,7 +2,7 @@ import * as ts from 'typescript';
 import * as D from './derivate';
 import * as O from 'fp-ts/lib/Option';
 
-export type Deriver = {
+export type Deriver<T> = {
 
   /**
    * Returns true if a given symbol can be substituted as a typeclass instance
@@ -21,7 +21,7 @@ export type Deriver = {
    *   node will be replaced with the resolved Expression.
    *   If no value is returned, the node will be skipped.
    */
-  extractor: (node: ts.Node) => D.Derivate<O.Option<[ts.Type, ts.Identifier]>>
+  extractor: (node: ts.Node) => D.Derivate<O.Option<[ts.Type, T]>>
 
   /**
    * Builds an expression that represents a tc instance for the given type.
@@ -31,7 +31,7 @@ export type Deriver = {
    */
   expressionBuilder(
     type: ts.Type,
-    identifier: ts.Identifier,
+    context: T,
     advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
     currentPath: D.PathContext,
   ): D.Derivate<ts.Expression>,

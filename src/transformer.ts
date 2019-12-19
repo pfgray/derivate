@@ -36,9 +36,9 @@ export const extractNameFromNamedImports = (
     )
   );
 
-const searchScope = (
+const searchScope = <T>(
   rootLocation: ts.Node,
-  deriver: Deriver
+  deriver: Deriver<T>
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
   D.askM(({ checker }) =>
     pipe(
@@ -125,9 +125,9 @@ const addResolvedExpression = (
  *   add to queried
  * @param t
  */
-const query = (
+const query = <T>(
   rootLocation: ts.Node,
-  deriver: Deriver
+  deriver: Deriver<T>
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
   Do(D.derivate)
     .sequenceS({
@@ -156,9 +156,9 @@ const query = (
 
 let importedFiles: string[] = []
 
-export function makeTransformer(
-  deriver: Deriver
-): <T extends ts.Node>(program: ts.Program) => ts.TransformerFactory<T> {
+export function makeTransformer<T>(
+  deriver: Deriver<T>
+): <N extends ts.Node>(program: ts.Program) => ts.TransformerFactory<N> {
   // dunno a way to avoid this mutated state...
   // let importedFiles: string[] = []
   let ids: string[]
@@ -169,7 +169,7 @@ export function makeTransformer(
         const source = node.getSourceFile();
         const buildExpressionInner = (
           t: ts.Type,
-          id: ts.Identifier,
+          context: T,
           queried: ts.Type[],
           path: D.PathContext
         ): D.Derivate<ts.Expression> =>
@@ -185,10 +185,10 @@ export function makeTransformer(
                       query,
                       O.map(h => D.of(h)),
                       O.getOrElse(() =>
-                        deriver.expressionBuilder(t, id, (nextType, step) =>
+                        deriver.expressionBuilder(t, context, (nextType, step) =>
                           buildExpressionInner(
                             nextType,
-                            id,
+                            context,
                             [...queried, t],
                             [...path, step]
                           )
@@ -200,8 +200,6 @@ export function makeTransformer(
               t => D.error(D.recursive(t, path))
             )
           );
-
-        console.log('Checking expression!!!')
 
         const programD = Do(D.derivate)
           .bind("type", deriver.extractor(node))
