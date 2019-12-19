@@ -1,8 +1,9 @@
 {
-  "name": "webpack_babel-example",
+  "name": "@derivate/example-webpack_babel",
   "version": "0.1.0",
   "main": "index.js",
   "license": "MIT",
+  "private": true,
   "dependencies": {
     "@babel/core": "^7.6.4",
     "@babel/preset-env": "^7.6.3",

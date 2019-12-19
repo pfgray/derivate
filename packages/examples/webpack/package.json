@@ -1,8 +1,9 @@
 {
-  "name": "webpack",
+  "name": "@derivate/example-webpack",
   "version": "0.1.0",
   "main": "index.js",
   "license": "MIT",
+  "private": true,
   "dependencies": {
     "cli-highlight": "^2.1.4",
     "fp-ts": "^2.1.2",
