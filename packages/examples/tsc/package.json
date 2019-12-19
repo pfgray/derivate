@@ -5,8 +5,8 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@derivate/io-ts-deriver": "0.1.0",
-    "@derivate/core": "0.1.0",
+    "@derivate/core": "^0.1.0",
+    "@derivate/io-ts-deriver": "^0.1.0",
     "@types/node": "^9.4.7"
   }
 }
