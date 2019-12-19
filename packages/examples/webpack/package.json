@@ -1,11 +1,11 @@
 {
   "name": "@derivate/example-webpack",
-  "version": "0.1.1-alpha.0",
+  "version": "0.1.2-alpha.0",
   "main": "index.js",
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@derivate/io-ts-deriver": "^0.1.1-alpha.0",
+    "@derivate/io-ts-deriver": "^0.1.2-alpha.0",
     "cli-highlight": "^2.1.4",
     "fp-ts": "^2.1.2",
     "io-ts": "^2.0.1",
