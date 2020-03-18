@@ -1,4 +1,4 @@
-import { SyntaxKind, TypeFlags, SymbolFlags, NodeFlags } from "typescript";
+import { SyntaxKind, TypeFlags, SymbolFlags, NodeFlags, ObjectFlags } from "typescript";
 
 export function syntaxKindtoName(s: SyntaxKind): string {
   switch (s) {
@@ -708,285 +708,326 @@ export function syntaxKindtoName(s: SyntaxKind): string {
   }
 }
 
-export function typeFlagToName(flag: TypeFlags): string {
-  switch (flag) {
-    case TypeFlags.Any:
-      return "Any";
-    case TypeFlags.Unknown:
-      return "Unknown";
-    case TypeFlags.String:
-      return "String";
-    case TypeFlags.Number:
-      return "Number";
-    case TypeFlags.Boolean:
-      return "Boolean";
-    case TypeFlags.Enum:
-      return "Enum";
-    case TypeFlags.BigInt:
-      return "BigInt";
-    case TypeFlags.StringLiteral:
-      return "StringLiteral";
-    case TypeFlags.NumberLiteral:
-      return "NumberLiteral";
-    case TypeFlags.BooleanLiteral:
-      return "BooleanLiteral";
-    case TypeFlags.EnumLiteral:
-      return "EnumLiteral";
-    case TypeFlags.BigIntLiteral:
-      return "BigIntLiteral";
-    case TypeFlags.ESSymbol:
-      return "ESSymbol";
-    case TypeFlags.UniqueESSymbol:
-      return "UniqueESSymbol";
-    case TypeFlags.Void:
-      return "Void";
-    case TypeFlags.Undefined:
-      return "Undefined";
-    case TypeFlags.Null:
-      return "Null";
-    case TypeFlags.Never:
-      return "Never";
-    case TypeFlags.TypeParameter:
-      return "TypeParameter";
-    case TypeFlags.Object:
-      return "Object";
-    case TypeFlags.Union:
-      return "Union";
-    case TypeFlags.Intersection:
-      return "Intersection";
-    case TypeFlags.Index:
-      return "Index";
-    case TypeFlags.IndexedAccess:
-      return "IndexedAccess";
-    case TypeFlags.Conditional:
-      return "Conditional";
-    case TypeFlags.Substitution:
-      return "Substitution";
-    case TypeFlags.NonPrimitive:
-      return "NonPrimitive";
-    case TypeFlags.Literal:
-      return "Literal";
-    case TypeFlags.Unit:
-      return "Unit";
-    case TypeFlags.StringOrNumberLiteral:
-      return "StringOrNumberLiteral";
-    case TypeFlags.PossiblyFalsy:
-      return "PossiblyFalsy";
-    case TypeFlags.StringLike:
-      return "StringLike";
-    case TypeFlags.NumberLike:
-      return "NumberLike";
-    case TypeFlags.BigIntLike:
-      return "BigIntLike";
-    case TypeFlags.BooleanLike:
-      return "BooleanLike";
-    case TypeFlags.EnumLike:
-      return "EnumLike";
-    case TypeFlags.ESSymbolLike:
-      return "ESSymbolLike";
-    case TypeFlags.VoidLike:
-      return "VoidLike";
-    case TypeFlags.UnionOrIntersection:
-      return "UnionOrIntersection";
-    case TypeFlags.StructuredType:
-      return "StructuredType";
-    case TypeFlags.TypeVariable:
-      return "TypeVariable";
-    case TypeFlags.InstantiableNonPrimitive:
-      return "InstantiableNonPrimitive";
-    case TypeFlags.InstantiablePrimitive:
-      return "InstantiablePrimitive";
-    case TypeFlags.Instantiable:
-      return "Instantiable";
-    case TypeFlags.StructuredOrInstantiable:
-      return "StructuredOrInstantiable";
-    case TypeFlags.Narrowable:
-      return "Narrowable";
-    case TypeFlags.NotUnionOrUnit:
-      return "NotUnionOrUnit";
-  }
+export function typeFlagToName(flags: TypeFlags): string {
+  let flagNames = []
+  if ((flags & TypeFlags.Any) !== 0)
+    flagNames.push("Any")
+  if ((flags & TypeFlags.Unknown) !== 0)
+    flagNames.push("Unknown")
+  if ((flags & TypeFlags.String) !== 0)
+    flagNames.push("String")
+  if ((flags & TypeFlags.Number) !== 0)
+    flagNames.push("Number")
+  if ((flags & TypeFlags.Boolean) !== 0)
+    flagNames.push("Boolean")
+  if ((flags & TypeFlags.Enum) !== 0)
+    flagNames.push("Enum")
+  if ((flags & TypeFlags.BigInt) !== 0)
+    flagNames.push("BigInt")
+  if ((flags & TypeFlags.StringLiteral) !== 0)
+    flagNames.push("StringLiteral")
+  if ((flags & TypeFlags.NumberLiteral) !== 0)
+    flagNames.push("NumberLiteral")
+  if ((flags & TypeFlags.BooleanLiteral) !== 0)
+    flagNames.push("BooleanLiteral")
+  if ((flags & TypeFlags.EnumLiteral) !== 0)
+    flagNames.push("EnumLiteral")
+  if ((flags & TypeFlags.BigIntLiteral) !== 0)
+    flagNames.push("BigIntLiteral")
+  if ((flags & TypeFlags.ESSymbol) !== 0)
+    flagNames.push("ESSymbol")
+  if ((flags & TypeFlags.UniqueESSymbol) !== 0)
+    flagNames.push("UniqueESSymbol")
+  if ((flags & TypeFlags.Void) !== 0)
+    flagNames.push("Void")
+  if ((flags & TypeFlags.Undefined) !== 0)
+    flagNames.push("Undefined")
+  if ((flags & TypeFlags.Null) !== 0)
+    flagNames.push("Null")
+  if ((flags & TypeFlags.Never) !== 0)
+    flagNames.push("Never")
+  if ((flags & TypeFlags.TypeParameter) !== 0)
+    flagNames.push("TypeParameter")
+  if ((flags & TypeFlags.Object) !== 0)
+    flagNames.push("Object")
+  if ((flags & TypeFlags.Union) !== 0)
+    flagNames.push("Union")
+  if ((flags & TypeFlags.Intersection) !== 0)
+    flagNames.push("Intersection")
+  if ((flags & TypeFlags.Index) !== 0)
+    flagNames.push("Index")
+  if ((flags & TypeFlags.IndexedAccess) !== 0)
+    flagNames.push("IndexedAccess")
+  if ((flags & TypeFlags.Conditional) !== 0)
+    flagNames.push("Conditional")
+  if ((flags & TypeFlags.Substitution) !== 0)
+    flagNames.push("Substitution")
+  if ((flags & TypeFlags.NonPrimitive) !== 0)
+    flagNames.push("NonPrimitive")
+  if ((flags & TypeFlags.Literal) !== 0)
+    flagNames.push("Literal")
+  if ((flags & TypeFlags.Unit) !== 0)
+    flagNames.push("Unit")
+  if ((flags & TypeFlags.StringOrNumberLiteral) !== 0)
+    flagNames.push("StringOrNumberLiteral")
+  if ((flags & TypeFlags.PossiblyFalsy) !== 0)
+    flagNames.push("PossiblyFalsy")
+  if ((flags & TypeFlags.StringLike) !== 0)
+    flagNames.push("StringLike")
+  if ((flags & TypeFlags.NumberLike) !== 0)
+    flagNames.push("NumberLike")
+  if ((flags & TypeFlags.BigIntLike) !== 0)
+    flagNames.push("BigIntLike")
+  if ((flags & TypeFlags.BooleanLike) !== 0)
+    flagNames.push("BooleanLike")
+  if ((flags & TypeFlags.EnumLike) !== 0)
+    flagNames.push("EnumLike")
+  if ((flags & TypeFlags.ESSymbolLike) !== 0)
+    flagNames.push("ESSymbolLike")
+  if ((flags & TypeFlags.VoidLike) !== 0)
+    flagNames.push("VoidLike")
+  if ((flags & TypeFlags.UnionOrIntersection) !== 0)
+    flagNames.push("UnionOrIntersection")
+  if ((flags & TypeFlags.StructuredType) !== 0)
+    flagNames.push("StructuredType")
+  if ((flags & TypeFlags.TypeVariable) !== 0)
+    flagNames.push("TypeVariable")
+  if ((flags & TypeFlags.InstantiableNonPrimitive) !== 0)
+    flagNames.push("InstantiableNonPrimitive")
+  if ((flags & TypeFlags.InstantiablePrimitive) !== 0)
+    flagNames.push("InstantiablePrimitive")
+  if ((flags & TypeFlags.Instantiable) !== 0)
+    flagNames.push("Instantiable")
+  if ((flags & TypeFlags.StructuredOrInstantiable) !== 0)
+    flagNames.push("StructuredOrInstantiable")
+  if ((flags & TypeFlags.Narrowable) !== 0)
+    flagNames.push("Narrowable")
+  if ((flags & TypeFlags.NotUnionOrUnit) !== 0)
+    flagNames.push("NotUnionOrUnit")
+  return flagNames.join(", ")
 }
 
-export function symbolFlagToName(s: SymbolFlags): string {
-  switch (s) {
-    case SymbolFlags.None:
-      return "None";
-    case SymbolFlags.FunctionScopedVariable:
-      return "FunctionScopedVariable";
-    case SymbolFlags.BlockScopedVariable:
-      return "BlockScopedVariable";
-    case SymbolFlags.Property:
-      return "Property";
-    case SymbolFlags.EnumMember:
-      return "EnumMember";
-    case SymbolFlags.Function:
-      return "Function";
-    case SymbolFlags.Class:
-      return "Class";
-    case SymbolFlags.Interface:
-      return "Interface";
-    case SymbolFlags.ConstEnum:
-      return "ConstEnum";
-    case SymbolFlags.RegularEnum:
-      return "RegularEnum";
-    case SymbolFlags.ValueModule:
-      return "ValueModule";
-    case SymbolFlags.NamespaceModule:
-      return "NamespaceModule";
-    case SymbolFlags.TypeLiteral:
-      return "TypeLiteral";
-    case SymbolFlags.ObjectLiteral:
-      return "ObjectLiteral";
-    case SymbolFlags.Method:
-      return "Method";
-    case SymbolFlags.Constructor:
-      return "Constructor";
-    case SymbolFlags.GetAccessor:
-      return "GetAccessor";
-    case SymbolFlags.SetAccessor:
-      return "SetAccessor";
-    case SymbolFlags.Signature:
-      return "Signature";
-    case SymbolFlags.TypeParameter:
-      return "TypeParameter";
-    case SymbolFlags.TypeAlias:
-      return "TypeAlias";
-    case SymbolFlags.ExportValue:
-      return "ExportValue";
-    case SymbolFlags.Alias:
-      return "Alias";
-    case SymbolFlags.Prototype:
-      return "Prototype";
-    case SymbolFlags.ExportStar:
-      return "ExportStar";
-    case SymbolFlags.Optional:
-      return "Optional";
-    case SymbolFlags.Transient:
-      return "Transient";
-    case SymbolFlags.Assignment:
-      return "Assignment";
-    case SymbolFlags.ModuleExports:
-      return "ModuleExports";
-    case SymbolFlags.Enum:
-      return "Enum";
-    case SymbolFlags.Variable:
-      return "Variable";
-    case SymbolFlags.Value:
-      return "Value";
-    case SymbolFlags.Type:
-      return "Type";
-    case SymbolFlags.Namespace:
-      return "Namespace";
-    case SymbolFlags.Module:
-      return "Module";
-    case SymbolFlags.Accessor:
-      return "Accessor";
-    case SymbolFlags.FunctionScopedVariableExcludes:
-      return "FunctionScopedVariableExcludes";
-    case SymbolFlags.BlockScopedVariableExcludes:
-      return "BlockScopedVariableExcludes";
-    case SymbolFlags.ParameterExcludes:
-      return "ParameterExcludes";
-    case SymbolFlags.PropertyExcludes:
-      return "PropertyExcludes";
-    case SymbolFlags.EnumMemberExcludes:
-      return "EnumMemberExcludes";
-    case SymbolFlags.FunctionExcludes:
-      return "FunctionExcludes";
-    case SymbolFlags.ClassExcludes:
-      return "ClassExcludes";
-    case SymbolFlags.InterfaceExcludes:
-      return "InterfaceExcludes";
-    case SymbolFlags.RegularEnumExcludes:
-      return "RegularEnumExcludes";
-    case SymbolFlags.ConstEnumExcludes:
-      return "ConstEnumExcludes";
-    case SymbolFlags.ValueModuleExcludes:
-      return "ValueModuleExcludes";
-    case SymbolFlags.NamespaceModuleExcludes:
-      return "NamespaceModuleExcludes";
-    case SymbolFlags.MethodExcludes:
-      return "MethodExcludes";
-    case SymbolFlags.GetAccessorExcludes:
-      return "GetAccessorExcludes";
-    case SymbolFlags.SetAccessorExcludes:
-      return "SetAccessorExcludes";
-    case SymbolFlags.TypeParameterExcludes:
-      return "TypeParameterExcludes";
-    case SymbolFlags.TypeAliasExcludes:
-      return "TypeAliasExcludes";
-    case SymbolFlags.AliasExcludes:
-      return "AliasExcludes";
-    case SymbolFlags.ModuleMember:
-      return "ModuleMember";
-    case SymbolFlags.ExportHasLocal:
-      return "ExportHasLocal";
-    case SymbolFlags.BlockScoped:
-      return "BlockScoped";
-    case SymbolFlags.PropertyOrAccessor:
-      return "PropertyOrAccessor";
-    case SymbolFlags.ClassMember:
-      return "ClassMember";
-  }
+export function objectFlagsToName(flags: ObjectFlags): string {
+  let flagNames = []
+  if((flags & ObjectFlags.Class) !== 0)
+    flagNames.push("Class")
+  if((flags & ObjectFlags.Interface) !== 0)
+    flagNames.push("Interface")
+  if((flags & ObjectFlags.Reference) !== 0)
+    flagNames.push("Reference")
+  if((flags & ObjectFlags.Tuple) !== 0)
+    flagNames.push("Tuple")
+  if((flags & ObjectFlags.Anonymous) !== 0)
+    flagNames.push("Anonymous")
+  if((flags & ObjectFlags.Mapped) !== 0)
+    flagNames.push("Mapped")
+  if((flags & ObjectFlags.Instantiated) !== 0)
+    flagNames.push("Instantiated")
+  if((flags & ObjectFlags.ObjectLiteral) !== 0)
+    flagNames.push("ObjectLiteral")
+  if((flags & ObjectFlags.EvolvingArray) !== 0)
+    flagNames.push("EvolvingArray")
+  if((flags & ObjectFlags.ObjectLiteralPatternWithComputedProperties) !== 0)
+    flagNames.push("ObjectLiteralPatternWithComputedProperties")
+  if((flags & ObjectFlags.ContainsSpread) !== 0)
+    flagNames.push("ContainsSpread")
+  if((flags & ObjectFlags.ReverseMapped) !== 0)
+    flagNames.push("ReverseMapped")
+  if((flags & ObjectFlags.JsxAttributes) !== 0)
+    flagNames.push("JsxAttributes")
+  if((flags & ObjectFlags.MarkerType) !== 0)
+    flagNames.push("MarkerType")
+  if((flags & ObjectFlags.JSLiteral) !== 0)
+    flagNames.push("JSLiteral")
+  if((flags & ObjectFlags.FreshLiteral) !== 0)
+    flagNames.push("FreshLiteral")
+  if((flags & ObjectFlags.ArrayLiteral) !== 0)
+    flagNames.push("ArrayLiteral")
+  if((flags & ObjectFlags.ClassOrInterface) !== 0)
+    flagNames.push("ClassOrInterface")
+  return flagNames.join(", ")
 }
 
-export function nodeFlagToName(s: NodeFlags): string {
-  switch (s) {
-    case NodeFlags.None:
-      return "None";
-    case NodeFlags.Let:
-      return "Let";
-    case NodeFlags.Const:
-      return "Const";
-    case NodeFlags.NestedNamespace:
-      return "NestedNamespace";
-    case NodeFlags.Synthesized:
-      return "Synthesized";
-    case NodeFlags.Namespace:
-      return "Namespace";
-    case NodeFlags.OptionalChain:
-      return "OptionalChain";
-    case NodeFlags.ExportContext:
-      return "ExportContext";
-    case NodeFlags.ContainsThis:
-      return "ContainsThis";
-    case NodeFlags.HasImplicitReturn:
-      return "HasImplicitReturn";
-    case NodeFlags.HasExplicitReturn:
-      return "HasExplicitReturn";
-    case NodeFlags.GlobalAugmentation:
-      return "GlobalAugmentation";
-    case NodeFlags.HasAsyncFunctions:
-      return "HasAsyncFunctions";
-    case NodeFlags.DisallowInContext:
-      return "DisallowInContext";
-    case NodeFlags.YieldContext:
-      return "YieldContext";
-    case NodeFlags.DecoratorContext:
-      return "DecoratorContext";
-    case NodeFlags.AwaitContext:
-      return "AwaitContext";
-    case NodeFlags.ThisNodeHasError:
-      return "ThisNodeHasError";
-    case NodeFlags.JavaScriptFile:
-      return "JavaScriptFile";
-    case NodeFlags.ThisNodeOrAnySubNodesHasError:
-      return "ThisNodeOrAnySubNodesHasError";
-    case NodeFlags.HasAggregatedChildData:
-      return "HasAggregatedChildData";
-    case NodeFlags.JSDoc:
-      return "JSDoc";
-    case NodeFlags.JsonFile:
-      return "JsonFile";
-    case NodeFlags.BlockScoped:
-      return "BlockScoped";
-    case NodeFlags.ReachabilityCheckFlags:
-      return "ReachabilityCheckFlags";
-    case NodeFlags.ReachabilityAndEmitFlags:
-      return "ReachabilityAndEmitFlags";
-    case NodeFlags.ContextFlags:
-      return "ContextFlags";
-    case NodeFlags.TypeExcludesFlags:
-      return "TypeExcludesFlags";
-  }
+export function symbolFlagToName(flags: SymbolFlags): string {
+  let flagNames = []
+  if((flags & SymbolFlags.None) !== 0)
+    flagNames.push("None")
+  if((flags & SymbolFlags.FunctionScopedVariable) !== 0)
+    flagNames.push("FunctionScopedVariable")
+  if((flags & SymbolFlags.BlockScopedVariable) !== 0)
+    flagNames.push("BlockScopedVariable")
+  if((flags & SymbolFlags.Property) !== 0)
+    flagNames.push("Property")
+  if((flags & SymbolFlags.EnumMember) !== 0)
+    flagNames.push("EnumMember")
+  if((flags & SymbolFlags.Function) !== 0)
+    flagNames.push("Function")
+  if((flags & SymbolFlags.Class) !== 0)
+    flagNames.push("Class")
+  if((flags & SymbolFlags.Interface) !== 0)
+    flagNames.push("Interface")
+  if((flags & SymbolFlags.ConstEnum) !== 0)
+    flagNames.push("ConstEnum")
+  if((flags & SymbolFlags.RegularEnum) !== 0)
+    flagNames.push("RegularEnum")
+  if((flags & SymbolFlags.ValueModule) !== 0)
+    flagNames.push("ValueModule")
+  if((flags & SymbolFlags.NamespaceModule) !== 0)
+    flagNames.push("NamespaceModule")
+  if((flags & SymbolFlags.TypeLiteral) !== 0)
+    flagNames.push("TypeLiteral")
+  if((flags & SymbolFlags.ObjectLiteral) !== 0)
+    flagNames.push("ObjectLiteral")
+  if((flags & SymbolFlags.Method) !== 0)
+    flagNames.push("Method")
+  if((flags & SymbolFlags.Constructor) !== 0)
+    flagNames.push("Constructor")
+  if((flags & SymbolFlags.GetAccessor) !== 0)
+    flagNames.push("GetAccessor")
+  if((flags & SymbolFlags.SetAccessor) !== 0)
+    flagNames.push("SetAccessor")
+  if((flags & SymbolFlags.Signature) !== 0)
+    flagNames.push("Signature")
+  if((flags & SymbolFlags.TypeParameter) !== 0)
+    flagNames.push("TypeParameter")
+  if((flags & SymbolFlags.TypeAlias) !== 0)
+    flagNames.push("TypeAlias")
+  if((flags & SymbolFlags.ExportValue) !== 0)
+    flagNames.push("ExportValue")
+  if((flags & SymbolFlags.Alias) !== 0)
+    flagNames.push("Alias")
+  if((flags & SymbolFlags.Prototype) !== 0)
+    flagNames.push("Prototype")
+  if((flags & SymbolFlags.ExportStar) !== 0)
+    flagNames.push("ExportStar")
+  if((flags & SymbolFlags.Optional) !== 0)
+    flagNames.push("Optional")
+  if((flags & SymbolFlags.Transient) !== 0)
+    flagNames.push("Transient")
+  if((flags & SymbolFlags.Assignment) !== 0)
+    flagNames.push("Assignment")
+  if((flags & SymbolFlags.ModuleExports) !== 0)
+    flagNames.push("ModuleExports")
+  if((flags & SymbolFlags.Enum) !== 0)
+    flagNames.push("Enum")
+  if((flags & SymbolFlags.Variable) !== 0)
+    flagNames.push("Variable")
+  if((flags & SymbolFlags.Value) !== 0)
+    flagNames.push("Value")
+  if((flags & SymbolFlags.Type) !== 0)
+    flagNames.push("Type")
+  if((flags & SymbolFlags.Namespace) !== 0)
+    flagNames.push("Namespace")
+  if((flags & SymbolFlags.Module) !== 0)
+    flagNames.push("Module")
+  if((flags & SymbolFlags.Accessor) !== 0)
+    flagNames.push("Accessor")
+  if((flags & SymbolFlags.FunctionScopedVariableExcludes) !== 0)
+    flagNames.push("FunctionScopedVariableExcludes")
+  if((flags & SymbolFlags.BlockScopedVariableExcludes) !== 0)
+    flagNames.push("BlockScopedVariableExcludes")
+  if((flags & SymbolFlags.ParameterExcludes) !== 0)
+    flagNames.push("ParameterExcludes")
+  if((flags & SymbolFlags.PropertyExcludes) !== 0)
+    flagNames.push("PropertyExcludes")
+  if((flags & SymbolFlags.EnumMemberExcludes) !== 0)
+    flagNames.push("EnumMemberExcludes")
+  if((flags & SymbolFlags.FunctionExcludes) !== 0)
+    flagNames.push("FunctionExcludes")
+  if((flags & SymbolFlags.ClassExcludes) !== 0)
+    flagNames.push("ClassExcludes")
+  if((flags & SymbolFlags.InterfaceExcludes) !== 0)
+    flagNames.push("InterfaceExcludes")
+  if((flags & SymbolFlags.RegularEnumExcludes) !== 0)
+    flagNames.push("RegularEnumExcludes")
+  if((flags & SymbolFlags.ConstEnumExcludes) !== 0)
+    flagNames.push("ConstEnumExcludes")
+  if((flags & SymbolFlags.ValueModuleExcludes) !== 0)
+    flagNames.push("ValueModuleExcludes")
+  if((flags & SymbolFlags.NamespaceModuleExcludes) !== 0)
+    flagNames.push("NamespaceModuleExcludes")
+  if((flags & SymbolFlags.MethodExcludes) !== 0)
+    flagNames.push("MethodExcludes")
+  if((flags & SymbolFlags.GetAccessorExcludes) !== 0)
+    flagNames.push("GetAccessorExcludes")
+  if((flags & SymbolFlags.SetAccessorExcludes) !== 0)
+    flagNames.push("SetAccessorExcludes")
+  if((flags & SymbolFlags.TypeParameterExcludes) !== 0)
+    flagNames.push("TypeParameterExcludes")
+  if((flags & SymbolFlags.TypeAliasExcludes) !== 0)
+    flagNames.push("TypeAliasExcludes")
+  if((flags & SymbolFlags.AliasExcludes) !== 0)
+    flagNames.push("AliasExcludes")
+  if((flags & SymbolFlags.ModuleMember) !== 0)
+    flagNames.push("ModuleMember")
+  if((flags & SymbolFlags.ExportHasLocal) !== 0)
+    flagNames.push("ExportHasLocal")
+  if((flags & SymbolFlags.BlockScoped) !== 0)
+    flagNames.push("BlockScoped")
+  if((flags & SymbolFlags.PropertyOrAccessor) !== 0)
+    flagNames.push("PropertyOrAccessor")
+  if((flags & SymbolFlags.ClassMember) !== 0)
+    flagNames.push("ClassMember")
+  return flagNames.join(", ")
+}
+
+export function nodeFlagToName(flags: NodeFlags): string {
+  let flagNames = []
+  if((flags & NodeFlags.None) !== 0)
+    flagNames.push("None")
+  if((flags & NodeFlags.Let) !== 0)
+    flagNames.push("Let")
+  if((flags & NodeFlags.Const) !== 0)
+    flagNames.push("Const")
+  if((flags & NodeFlags.NestedNamespace) !== 0)
+    flagNames.push("NestedNamespace")
+  if((flags & NodeFlags.Synthesized) !== 0)
+    flagNames.push("Synthesized")
+  if((flags & NodeFlags.Namespace) !== 0)
+    flagNames.push("Namespace")
+  if((flags & NodeFlags.OptionalChain) !== 0)
+    flagNames.push("OptionalChain")
+  if((flags & NodeFlags.ExportContext) !== 0)
+    flagNames.push("ExportContext")
+  if((flags & NodeFlags.ContainsThis) !== 0)
+    flagNames.push("ContainsThis")
+  if((flags & NodeFlags.HasImplicitReturn) !== 0)
+    flagNames.push("HasImplicitReturn")
+  if((flags & NodeFlags.HasExplicitReturn) !== 0)
+    flagNames.push("HasExplicitReturn")
+  if((flags & NodeFlags.GlobalAugmentation) !== 0)
+    flagNames.push("GlobalAugmentation")
+  if((flags & NodeFlags.HasAsyncFunctions) !== 0)
+    flagNames.push("HasAsyncFunctions")
+  if((flags & NodeFlags.DisallowInContext) !== 0)
+    flagNames.push("DisallowInContext")
+  if((flags & NodeFlags.YieldContext) !== 0)
+    flagNames.push("YieldContext")
+  if((flags & NodeFlags.DecoratorContext) !== 0)
+    flagNames.push("DecoratorContext")
+  if((flags & NodeFlags.AwaitContext) !== 0)
+    flagNames.push("AwaitContext")
+  if((flags & NodeFlags.ThisNodeHasError) !== 0)
+    flagNames.push("ThisNodeHasError")
+  if((flags & NodeFlags.JavaScriptFile) !== 0)
+    flagNames.push("JavaScriptFile")
+  if((flags & NodeFlags.ThisNodeOrAnySubNodesHasError) !== 0)
+    flagNames.push("ThisNodeOrAnySubNodesHasError")
+  if((flags & NodeFlags.HasAggregatedChildData) !== 0)
+    flagNames.push("HasAggregatedChildData")
+  if((flags & NodeFlags.JSDoc) !== 0)
+    flagNames.push("JSDoc")
+  if((flags & NodeFlags.JsonFile) !== 0)
+    flagNames.push("JsonFile")
+  if((flags & NodeFlags.BlockScoped) !== 0)
+    flagNames.push("BlockScoped")
+  if((flags & NodeFlags.ReachabilityCheckFlags) !== 0)
+    flagNames.push("ReachabilityCheckFlags")
+  if((flags & NodeFlags.ReachabilityAndEmitFlags) !== 0)
+    flagNames.push("ReachabilityAndEmitFlags")
+  if((flags & NodeFlags.ContextFlags) !== 0)
+    flagNames.push("ContextFlags")
+  if((flags & NodeFlags.TypeExcludesFlags) !== 0)
+    flagNames.push("TypeExcludesFlags")
+  return flagNames.join(", ")
 }

@@ -10,6 +10,7 @@
     "lerna": "^3.19.0"
   },
   "scripts": {
-    "build": "lerna run build"
+    "build": "lerna run build",
+    "test": "lerna exec --scope='{@derivate/core,@derivate/io-ts-deriver,@derivate/example-tsc}' -- yarn build"
   }
 }

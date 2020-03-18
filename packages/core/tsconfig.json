@@ -13,7 +13,8 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"],
-    "composite": true
+    "composite": true,
+    "sourceMap": true,
   },
   "include": ["./src/**/*.ts"]
 }

@@ -1,5 +1,6 @@
 const { ioTsTransformer } = require("@derivate/io-ts-deriver/lib/io-ts-transformer");
 const path = require('path')
+require('source-map-support').install();
 
 // tslint:disable-next-line no-var-requires
 

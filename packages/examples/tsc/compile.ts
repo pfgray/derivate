@@ -1,20 +1,28 @@
 import * as ts from 'typescript';
-import { makeTransformer } from '@derivate/core/transformer';
-import { IoTsDeriver } from '@derivate/io-ts-deriver/io-ts-deriver';
+import { ioTsTransformer } from '@derivate/io-ts-deriver/lib/io-ts-transformer';
 
-const program = ts.createProgram(['./test/simple.ts'], {});
-const source = program.getSourceFile('./test/simple.ts');
+import { highlight } from 'cli-highlight'
+
+const program = ts.createProgram(['./index.ts'], {});
+const source = program.getSourceFile('./index.ts');
 
 if(source) {
-
   const result = ts.transform(source, [
-    makeTransformer(IoTsDeriver("../src/io-ts-type"))(program)
+    ioTsTransformer(program)
   ])
 
   console.log('/** Transforming: **/');
-  console.log(ts.createPrinter().printFile(source));
+  console.log(
+    highlight(ts.createPrinter().printFile(source), {
+      language: 'typescript'
+    })
+  );
   console.log('/** Into: **/');
-  console.log(ts.createPrinter().printFile(result.transformed[0]));
+  console.log(
+    highlight(ts.createPrinter().printFile(result.transformed[0]), {
+      language: 'typescript'
+    })
+  )
   console.log('/****/');
 }
 

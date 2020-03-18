@@ -1,6 +1,13 @@
 import { __deriveIO } from '@derivate/io-ts-deriver/lib/io-ts-type'
+import { Option } from 'fp-ts/lib/Option'
+import { Type } from 'io-ts'
 
-const io = __deriveIO.derive<{hmm: string, num: number}>()
+function foo<A>(f: Type<A, unknown, unknown>): Type<Foo<A>, unknown, unknown> {
+  return null as any;
+}
 
-console.log(io.decode({}))
-console.log(io.decode({hmm: 'adf', num: 4}))
+type Foo<A> = {
+  value: A
+}
+
+__deriveIO.derive<Foo<any>>()

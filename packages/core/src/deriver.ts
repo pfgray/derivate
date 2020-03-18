@@ -5,6 +5,18 @@ import * as O from 'fp-ts/lib/Option';
 export type Deriver<T> = {
 
   /**
+   * Returns true if a given symbol can be used to build a typeclass
+   * for the specified type.
+   * @param symbol
+   * @param type 
+   */
+  symbolRepresentsTcBuilderForType?(
+    functionSymbol: ts.Symbol,
+    typeParameters: ts.Type[],
+    type: ts.Type
+  ): D.Derivate<boolean>,
+
+  /**
    * Returns true if a given symbol can be substituted as a typeclass instance
    * for the specified type. This enables implicit tc instance resolution.
    * @param symbol 

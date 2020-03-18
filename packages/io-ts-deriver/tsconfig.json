@@ -12,7 +12,8 @@
     // "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es6"]
+    "lib": ["es6"],
+    "sourceMap": true,
   },
   "include": ["./src/**/*.ts"],
   "references": [{

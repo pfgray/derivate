@@ -37,6 +37,7 @@ export const symbolMatches = (name: string, moduleName: string): ((s: ts.Symbol)
             id: getOriginalNameFromNamedImports(s, ni)
           }),
           O.map(({mn, id}) => {
+            console.log('looking at', id, 'from', mn)
             return mn === moduleName && id === name
           }),
           toArray
@@ -115,3 +116,14 @@ export const tap = <A>(f: (a: A) => void): ((a: A) => A) => a => {
 export const log = (s: string): (<A>(a: A) => A) => tap(a => console.log(s));
 export const logIt = (s: string): (<A>(a: A) => A) => tap(a => console.log(s, a));
 export const logWith = <A>(s: string, f: (a: A) => unknown): ((a: A) => A) => tap(a => console.log(s, f(a)))
+
+export const isGeneric = (t: ts.Type): O.Option<ts.Type[]> => {
+  const typeRef = t as ts.TypeReference
+  if(typeRef.typeArguments && typeRef.typeArguments.length > 0) {
+    return O.some(typeRef.typeArguments as ts.Type[]);
+  } else if(t.aliasTypeArguments && t.aliasTypeArguments.length > 0) {
+    return O.some(t.aliasTypeArguments as ts.Type[])
+  } else {
+    return O.none
+  }
+}

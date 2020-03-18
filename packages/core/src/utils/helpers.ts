@@ -5,7 +5,8 @@ import { pipe } from "fp-ts/lib/pipeable";
 import { isTypeFlagSet } from 'tsutils';
 import * as ts from "typescript";
 import { ADT } from "ts-adt";
-import { access, toArray } from "./compilerUtils";
+import { access, toArray, isGeneric } from "./compilerUtils";
+import { monoidString } from "fp-ts/lib/Monoid";
 
 type MatchTypes = {
   stringLiteral: { value: string };
@@ -119,7 +120,7 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
           A.chain<ts.Symbol, Property>(prop => {
             // declare const checker: ts.TypeChecker;
             //checker.getTypeFromTypeNode()
-
+            
             const dec = prop.valueDeclaration;
 
             if (!dec) {
@@ -168,13 +169,22 @@ export const printType = (
   root: ts.Type,
 ) => string) => {
   const inner = (queried: ts.Type[], type: ts.Type): string => {
-    if (type.aliasSymbol) {
+    if(isGeneric(type)._tag === "Some") {
+      const symbol = type.aliasSymbol ? type.aliasSymbol.name : type.symbol.name
+      return symbol + '<' +
+        pipe(
+          isGeneric(type),
+          O.fold(() => [], A.map(t => t.getConstraint() ? "A extends " + inner([...queried, type], t.getConstraint()!) : "A")),
+          a => a.join(", ")
+        )
+        + '>'   
+    } else if (type.aliasSymbol) {
       return type.aliasSymbol.name;
     } else {
       const alreadyQueried = queried.find(t => t === type);
       if (alreadyQueried) {
         return "[recursive]";
-      } else {
+      } else  {
         return matchType<string>({
           stringLiteral: str => `'${str.value}'`,
           string: () => "string",

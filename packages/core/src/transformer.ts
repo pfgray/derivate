@@ -8,11 +8,14 @@ import { Lens } from "monocle-ts";
 import * as ts from "typescript";
 import * as D from "./derivate";
 import { Deriver } from "./deriver";
-import { access, isTypeAssignableTo, typeEq } from "./utils/compilerUtils";
+import { access, isTypeAssignableTo, typeEq, isGeneric, symbolMatches } from "./utils/compilerUtils";
 import { dim, red } from "./utils/console";
 import { printType } from "./utils/helpers";
 import { Hood } from "./utils/hood";
+import { typeFlagToName, symbolFlagToName } from "./utils/syntaxKind";
+import { hasModifier, isSymbolFlagSet, isGenericType } from "tsutils";
 
+// declare const foo: ts.Type
 
 const toArray = <T>(o: O.Option<T>): T[] => (O.isSome(o) ? [o.value] : []);
 
@@ -36,23 +39,112 @@ export const extractNameFromNamedImports = (
     )
   );
 
+// is t generic?
+// if so, search for a function which has a parameter 
+
+// t is: Option<T>
+// function optionCodec<T>(t: Codec<T>): Codec<Option<T>>
+
+// t is Either<L, R>
+// function eitherCodec<L, R>(l: Codec<L>, r: Codec<R>): Codec<Either<L, R>>
+
 const searchScope = <T>(
   rootLocation: ts.Node,
   deriver: Deriver<T>
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
-  D.askM(({ checker }) =>
-    pipe(
-      checker.getSymbolsInScope(rootLocation, ts.SymbolFlags.Value),
-      // todo: this next step could probably short circuit, instead of searching all...
-      symbols =>
-        A.array.traverse(D.derivate)(symbols, symbol =>
-          pipe(
-            deriver.symbolRepresentsTcForType
-              ? deriver.symbolRepresentsTcForType(symbol, t)
-              : D.of(false),
-            D.map(isGood => (isGood ? O.some(symbol) : O.none))
+    D.askM(({ checker, source }) =>
+      pipe(
+        checker.getSymbolsInScope(rootLocation, ts.SymbolFlags.Value),
+        // todo: this next step could probably short circuit, instead of searching all...
+        symbols => {
+
+          return pipe(
+            isGeneric(t),
+            O.fold(
+              () => {
+                return A.array.traverse(D.derivate)(symbols, symbol =>
+                  pipe(
+                    deriver.symbolRepresentsTcForType
+                      ? deriver.symbolRepresentsTcForType(symbol, t)
+                      : D.of(false),
+                    D.map(isGood => (isGood ? O.some(symbol) : O.none))
+                  )
+                )
+              }
+            , genericParameters => {
+              // if
+              symbols.map(s => {
+
+                
+                if(s.name === "foo" && isSymbolFlagSet(s, ts.SymbolFlags.Function)) {
+                  
+
+                  deriver.symbolRepresentsTcBuilderForType ? deriver.symbolRepresentsTcBuilderForType(s, genericParameters, t) : false
+
+                  
+                  //  if the return type is Type (from io-ts)
+                  //    and there are the same amount of generic params to the function as there are in genericParameters,
+
+
+                  // advance on genericParameters
+                  
+
+
+                  // build an expression which calls this function, and supplies the genericParameters
+                  console.log("In our search for a codec for: " , printType(checker, source)(t))
+                  
+
+                  console.log('rootLocation is:', rootLocation.pos)
+                  const typ = checker.getTypeOfSymbolAtLocation(s, rootLocation)
+
+                  console.log("Call signatures: ")
+                  typ.getCallSignatures().forEach(cs => {
+                    console.log("  return ", cs.getReturnType().getSymbol()?.name)
+
+                    // if the symbol 
+                    
+
+                    // cs.getReturnType().symbol.
+                    cs.getReturnType().symbol.declarations
+                    if(symbolMatches("Type", "io-ts")(cs.getReturnType().symbol)) {
+                      console.log('The function', s.name, "returns a Type from io-ts")
+                    } else {
+                      console.log('The function', s.name, " does NOT return a Type from io-ts")
+                    }
+
+                    pipe(
+                      isGeneric(cs.getReturnType()),
+                      O.map(a => {
+                        // if the first type parameter of this type
+
+                        // console.log("  type param: ", a.map(t => t.symbol.name))
+                      })
+                    )
+                    console.log("  and ", )
+                  })
+
+                  // typ.getCallSignatures()
+                  // const dec = s.declarations[0]
+
+                  // if(ts.isFunctionDeclaration(dec)){
+                  //   dec.typeParameters()
+                  // }
+                  
+                  console.log("Found function symbol: ", s.name);
+                  // console.log("  flags: ", symbolFlagToName(s.flags))
+                }
+              })
+              return D.error(D.exception("We don't support generic types atm"))
+            })
           )
-        ),
+
+          //  if it is generic... find a function which has only X generic parameters,
+          //    and returns t, except with the parameterized params. todo: does order matter?
+
+          // find symbols which are functions that
+          
+          
+        },
         D.map(
           flow(
             A.chain(a => toArray(a)),
@@ -60,24 +152,24 @@ const searchScope = <T>(
             O.map(symbol => ts.createIdentifier(symbol.getName()))
           )
         )
-    )
-  );
+      )
+    );
 
 const findType = (
   t: ts.Type
 ): (<I extends { type: ts.Type }, T extends I[]>(
   types: T
 ) => D.Derivate<O.Option<I>>) => types =>
-  D.ask(({ checker }) =>
-    pipe(
-      types,
-      A.findFirst(
-        ({ type }) =>
-          isTypeAssignableTo(checker, type, t) &&
-          isTypeAssignableTo(checker, type, t)
+    D.ask(({ checker }) =>
+      pipe(
+        types,
+        A.findFirst(
+          ({ type }) =>
+            isTypeAssignableTo(checker, type, t) &&
+            isTypeAssignableTo(checker, type, t)
+        )
       )
-    )
-  );
+    );
 
 const findInResolved = (t: ts.Type): D.Derivate<O.Option<ts.Expression>> =>
   pipe(
@@ -129,30 +221,30 @@ const query = <T>(
   rootLocation: ts.Node,
   deriver: Deriver<T>
 ): ((t: ts.Type) => D.Derivate<O.Option<ts.Expression>>) => t =>
-  Do(D.derivate)
-    .sequenceS({
-      resolved: findInResolved(t)
-      // queried: hasBeenQueried(t) todo: not sure I need this
-    })
-    .do(D.modify(queriedL.modify(q => [...q, { type: t }])))
-    .bindL("ret", ({ resolved }) => D.of(resolved))
-    .bind("search", searchScope(rootLocation, deriver)(t))
-    .doL(
-      flow(
-        access("search"),
-        O.fold(
-          // null is fine here, return is thrown out
-          () => D.of(null as unknown),
-          e => D.modify(addResolvedExpression(e, t))
+    Do(D.derivate)
+      .sequenceS({
+        resolved: findInResolved(t)
+        // queried: hasBeenQueried(t) todo: not sure I need this
+      })
+      .do(D.modify(queriedL.modify(q => [...q, { type: t }])))
+      .bindL("ret", ({ resolved }) => D.of(resolved))
+      .bind("search", searchScope(rootLocation, deriver)(t))
+      .doL(
+        flow(
+          access("search"),
+          O.fold(
+            // null is fine here, return is thrown out
+            () => D.of(null as unknown),
+            e => D.modify(addResolvedExpression(e, t))
+          )
         )
       )
-    )
-    .return(c =>
-      pipe(
-        c.search,
-        O.alt(() => c.ret)
-      )
-    );
+      .return(c => {
+        return pipe(
+          c.search,
+          O.alt(() => c.ret)
+        )
+      });
 
 let importedFiles: string[] = []
 
@@ -192,7 +284,7 @@ export function makeTransformer<T>(
                             [...queried, t],
                             [...path, step]
                           )
-                        , path)
+                          , path)
                       )
                     )
                   )
@@ -230,7 +322,9 @@ export function makeTransformer<T>(
             } else if (err._type === "UnsupportedType") {
               errMessage +=
                 "Unsupported type: " + pr(err.type) + ` (${err.label})\n`;
-              errMessage += printPath(pr,err.path)
+              errMessage += printPath(pr, err.path)
+            } else if (err._type === "Exception") {
+              errMessage += err.message
             }
           });
           // console.log(errMessage)
@@ -247,7 +341,7 @@ export function makeTransformer<T>(
   };
 }
 
-const printPath = (pr: (t: ts.Type) => string, path?: D.PathContext,): string => {
+const printPath = (pr: (t: ts.Type) => string, path?: D.PathContext, ): string => {
   return path ? path
     .map((path, i) => {
       if (path._type === "prop") {
@@ -273,13 +367,13 @@ export const printHood = (
   separator: string,
   print: (t: ts.Type) => string
 ): ((h: Hood<ts.Type>) => string) => h =>
-  (h.left.length > 0
-    ? dim(h.left.map(print).join(` ${separator} `) + ` ${separator} `)
-    : "") +
-  red(print(h.focus)) +
-  (h.right.length > 0
-    ? dim(` ${separator} ` + h.right.map(print).join(` ${separator} `))
-    : "");
+    (h.left.length > 0
+      ? dim(h.left.map(print).join(` ${separator} `) + ` ${separator} `)
+      : "") +
+    red(print(h.focus)) +
+    (h.right.length > 0
+      ? dim(` ${separator} ` + h.right.map(print).join(` ${separator} `))
+      : "");
 
 export const indentTo = (n: number, s: string): string => {
   let str = "";
