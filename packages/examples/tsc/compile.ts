@@ -1,6 +1,6 @@
 import * as ts from 'typescript';
-import { makeTransformer } from '@derivate/core/transformer';
-import { IoTsDeriver } from '@derivate/io-ts-deriver/io-ts-deriver';
+import { makeTransformer } from '@derivate/core/lib/transformer';
+import { IoTsDeriver } from '@derivate/io-ts-deriver/lib/io-ts-deriver';
 
 const program = ts.createProgram(['./test/simple.ts'], {});
 const source = program.getSourceFile('./test/simple.ts');

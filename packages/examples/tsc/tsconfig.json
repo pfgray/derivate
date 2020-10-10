@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
     "outDir": "./lib",
+    "declaration": true,
     "target": "ESNext",
     "module": "ESNext",
-    "strict": true,
     "moduleResolution": "node",
+    "strict": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6", "dom"]

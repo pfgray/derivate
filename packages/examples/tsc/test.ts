@@ -1,21 +1,21 @@
-import {__derive} from '../src/io-ts-type';
+import { __deriveIO } from '@derivate/io-ts-deriver/lib/io-ts-type';
 import { User } from './User';
 import { Type } from 'io-ts';
 
 {
   const userC: Type<User> = null as any;
-  __derive<User>()
+  __deriveIO.derive<User>()
 }
 
 {
   const dateC: Type<Date> = null as any;
-  __derive<User>()
+  __deriveIO.derive<User>()
 }
 
 {
   const lmao: Type<User> = null as any;
   (function() {
-    __derive<{foo: number}>()
+    __deriveIO.derive<{foo: number}>()
   })()
 }
 
