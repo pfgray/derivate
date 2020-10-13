@@ -13,6 +13,5 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6"]
-  },
-  "include": ["./src/**/*"]
+  }
 }
