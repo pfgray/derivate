@@ -10,7 +10,7 @@
     "monocle-ts": "^2.0.0",
     "ts-adt": "^1.0.1",
     "tsutils": "^3.17.1",
-    "typescript": "3.7.0-dev.20191013"
+    "typescript": "^4.0"
   },
   "scripts": {
     "build": "tsc"

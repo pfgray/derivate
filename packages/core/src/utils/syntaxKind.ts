@@ -802,8 +802,6 @@ export function typeFlagToName(flag: TypeFlags): string {
       return "StructuredOrInstantiable";
     case TypeFlags.Narrowable:
       return "Narrowable";
-    case TypeFlags.NotUnionOrUnit:
-      return "NotUnionOrUnit";
   }
 }
 
