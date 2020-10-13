@@ -7,6 +7,7 @@ console.log(io.decode({hmm: 'adf', num: 4}))
 
 type Op<A> = {_tag: "some", value: A} | {_tag: "none"}
 
+type Id<A> =  { foo: A | string }
 
 // __deriveIO.t.union([
 //   __deriveIO.t.type({
@@ -18,7 +19,7 @@ type Op<A> = {_tag: "some", value: A} | {_tag: "none"}
 //   })
 // ]);
 
-const hmm =__deriveIO.derive<Op<number>>()
+const hmm = __deriveIO.derive<Id<number>>()
 
 console.log(hmm.decode({}))
 console.log(hmm.decode({_tag: 'some', value: 5}))

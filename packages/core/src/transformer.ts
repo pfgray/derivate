@@ -223,7 +223,7 @@ export function makeTransformer<T>(
         if (E.isLeft(result)) {
           let errMessage: string = "";
           result.left.forEach(err => {
-            const pr = (t: ts.Type) => printType(checker, source)(t);
+            const pr = (t: ts.Type) => printType(checker, source, node)(t);
             if (err._type === "RecursiveTypeDetected") {
               errMessage += "Recursive type detected:\n";
               errMessage += printPath(pr, err.path)

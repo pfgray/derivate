@@ -26,13 +26,7 @@ type MatchTypes = {
   // generic: { type: ts.Type, parameters: ts.Type[] },
   function: { arguments: ts.Type[]; returnType: ts.Type };
 
-  // todo: this is just, ugh...
-  struct: {
-    extract: (
-      checker: ts.TypeChecker,
-      source: ts.SourceFile
-    ) => { props: Property[] };
-  };
+  struct: { props: ts.Symbol[]; };
 
   default: undefined;
 };
@@ -94,7 +88,6 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
   } else if (isTypeFlagSet(t, ts.TypeFlags.Any)) {
     return m.any(undefined);
   } else if (isTypeFlagSet(t, ts.TypeFlags.BooleanLiteral) && t.isLiteral() /*  */) {
-    console.log("GOT boolean literal: ", t.value);
     return m.booleanLiteral({ value: (t.value as any) as boolean }); // todo: is this safe???
   } else if (isTypeFlagSet(t, ts.TypeFlags.Boolean)) {
     return m.boolean(undefined);
@@ -108,62 +101,15 @@ export const matchType = <Z>(m: Matchers<Z>): ((t: ts.Type) => Z) => t => {
     return m.class({ type: t });
   } else if (t.isClassOrInterface()) {
     return m.interface({ type: t });
-    //return D.error(unsupportedType(t, 'Class: ' + t.getSymbol()!.escapedName.toString()));
   } else {
-    // TODO: this is kinda whack and needs some review, is there a better way?
-    // defaulting to struct
-    return m.struct({
-      extract: (checker) => ({
-        props: pipe(
-          t.getProperties(),
-          A.chain<ts.Symbol, Property>(prop => {
-            // declare const checker: ts.TypeChecker;
-            //checker.getTypeFromTypeNode()
-
-            const dec = prop.valueDeclaration;
-
-            if (!dec) {
-              return [];
-            } else if (ts.isPropertySignature(dec)) {
-              return pipe(
-                dec.type,
-                O.fromNullable,
-                O.map(checker.getTypeFromTypeNode),
-                O.map(typ => property(dec.name.getText(), typ)),
-                toArray
-              );
-            } else if (ts.isMethodSignature(dec)) {
-              const params = pipe(
-                dec.parameters.map(identity),
-                A.chain(
-                  flow(
-                    access("type"),
-                    O.fromNullable,
-                    toArray
-                  )
-                ),
-                A.map(checker.getTypeFromTypeNode)
-              );
-              return pipe(
-                dec.type,
-                O.fromNullable,
-                O.map(checker.getTypeFromTypeNode),
-                O.map(t => meth(dec.name.getText(), params, t)),
-                toArray
-              );
-            } else {
-              return [];
-            }
-          })
-        )
-      })
-    });
+    return m.struct({props: t.getProperties()})
   }
 };
 
 export const printType = (
   checker: ts.TypeChecker,
-  source: ts.SourceFile
+  source: ts.SourceFile,
+  location: ts.Node
 ): ((
   root: ts.Type,
 ) => string) => {
@@ -190,16 +136,12 @@ export const printType = (
           class: c => c.type.symbol.name,
           interface: c => c.type.symbol.name,
           function: () => "Function",
-          struct: ({ extract }) => {
-            const wut = extract(checker, source);
-            const props = wut.props.map(
-              propFold({
-                method: () => "function",
-                property: (name, t) =>
-                  `${name}: ${inner([...queried, type], t)}`
-              })
-            );
-            return `{ ${props.join(", ")} }`;
+          struct: ({props}) => {
+            const formattedProps = props.map(sym => {
+              const t = checker.getTypeOfSymbolAtLocation(sym, location)
+              return `${sym.name}: ${inner([...queried, type], t)}`
+            });
+            return `{ ${formattedProps.join(", ")} }`;
           },
           default: () => "hrm..."
         })(type);

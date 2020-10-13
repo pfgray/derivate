@@ -12,6 +12,8 @@ import { splay } from "@derivate/core/lib/utils/hood";
 import { logWith, log, access, extract, symbolMatches, typeEq, logIt } from "@derivate/core/lib/utils/compilerUtils";
 import { syntaxKindtoName } from '@derivate/core/lib/utils/syntaxKind';
 
+import { isTypeFlagSet } from 'tsutils';
+
 const JSDocTagName = "implied";
 const FuncName = "__deriveIO";
 // const ModuleName = "derivate/lib/io-ts-type";
@@ -37,10 +39,10 @@ const callT = (
 
 const tImport = "t";
 
-export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io-ts-type"): Deriver<ts.Identifier> => ({
+export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io-ts-type"): Deriver<[ts.Identifier, ts.TypeNode]> => ({
   expressionBuilder: (
     type: ts.Type,
-    id: ts.Identifier,
+    [id, typeNode]: [ts.Identifier, ts.TypeNode],
     advance: (t: ts.Type, step: D.ContextStep) => D.Derivate<ts.Expression>,
     currentPath: D.PathContext,
   ) => {
@@ -96,27 +98,19 @@ export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io
       // todo: hmm
       // generic: { type: ts.Type, parameters: ts.Type[] },
       function: () => accessT(id, "Function"),
-      struct: ({ extract }) =>
-        D.askM(({ checker, source }) =>
+      struct: ({ props }) =>
+        D.askM(({ checker, source, deriveNode }) =>
           pipe(
-            extract(checker, source),
-            ({ props }) =>
-              array.traverse(D.derivate)(
-                props,
-                propFold({
-                  method: name =>
-                    pipe(
-                      accessT(id, "function"),
-                      D.map(acc => ts.createPropertyAssignment(name, acc))
-                    ),
-                  property: (name, t) => {
-                    return pipe(
-                      advance(t, { _type: "prop", name, type: t }),
-                      D.map(acc => ts.createPropertyAssignment(name, acc))
-                    );
-                  }
-                })
-              ),
+            array.traverse(D.derivate)(
+              props,
+              prop => {
+                const t = checker.getTypeOfSymbolAtLocation(prop, deriveNode)
+                return pipe(
+                advance(t, { _type: "prop", name: prop.name, type: t }),
+                D.map(acc => ts.createPropertyAssignment(prop.name, acc))
+                )
+              }),
+            
             D.map(ts.createObjectLiteral),
             D.chain(callT(id, "type"))
           )
@@ -197,20 +191,23 @@ export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io
               )
             }
           )
+          .bindL("typeNode", flow(
+            access("ce"),
+            access("typeArguments"),
+            O.fromNullable,
+            O.map(args => args[0]),
+            O.chain(O.fromNullable)))
           .bindL(
             "type",
             flow(
-              access("ce"),
-              access("typeArguments"),
-              O.fromNullable,
-              O.map(args => args[0]),
-              O.chain(O.fromNullable),
-              O.map(checker.getTypeFromTypeNode)
+              access("typeNode"),
+              checker.getTypeFromTypeNode,
+              O.some
             )
           )
-          .return(({ ce, identifier, type }) => {
+          .return(({ ce, identifier, type, typeNode }) => {
+            // if(isTypeFlagSet(type, ts.TypeFlags.))
             
-            // console.log("found!");
             // console.log("  call expression:", ce.getText());
             
             // console.log('  children:');
@@ -218,7 +215,7 @@ export const IoTsDeriver = (moduleName: string = "@derivate/io-ts-deriver/lib/io
             //   console.log('      :', syntaxKindtoName(n.kind), `(${n.getText()})`)
             // })
             // console.log("  extracted type :", type.symbol.escapedName);
-            return [type, identifier];
+            return [type, [identifier, typeNode]];
           })
       )
     )
